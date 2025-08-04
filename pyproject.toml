@@ -1,0 +1,33 @@
+[project]
+name = "kindle"
+version = "0.1.0"
+description = "Tinder clone on FastAPI"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlalchemy",
+    "alembic",
+    "psycopg2-binary",
+    "python-dotenv",
+    "pydantic[email]",
+    "boto3",
+    "httpx",
+    "redis",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "httpx",
+]
+
+lint = [
+    "ruff",
+    "mypy",
+]
+
+tools = [
+    "pre-commit"
+]

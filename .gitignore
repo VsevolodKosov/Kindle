@@ -1,0 +1,72 @@
+# Виртуальное окружение
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Артефакты сборки
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Конфиги и временные файлы
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# Логи
+*.log
+
+# dotenv файл с чувствительными данными
+.env
+.env.*
+
+# SQLite базы (если вдруг)
+*.sqlite3
+
+# Кэш pip, poetry, uv
+pip-wheel-metadata/
+.uv-cache/
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# Mypy
+.mypy_cache/
+
+# pytest cache
+.pytest_cache/
+
+# celery beat schedule file
+celerybeat-schedule
+
+# Redis dump (если используешь локальный)
+dump.rdb
+
+# Docker files
+docker-compose.override.yml
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/

@@ -1,0 +1,31 @@
+services:
+  kindle_db_prod:
+    container_name: kindle_db_prod
+    image: postgis/postgis:15-3.3-alpine
+    restart: always
+    env_file:
+      - ../env/.env.db_prod
+    ports:
+      - "5432:5432"
+    volumes:
+      - kindle_prod_data:/var/lib/postgresql/data
+    networks:
+      - custom
+
+  kindle_db_test:
+    container_name: kindle_db_test
+    image: postgis/postgis:15-3.3-alpine
+    restart: always
+    env_file:
+      - ../env/.env.db_test
+    ports:
+      - "5433:5432"
+    networks:
+      - custom
+
+volumes:
+  kindle_prod_data:
+
+networks:
+  custom:
+    driver: bridge

@@ -1,0 +1,488 @@
+{
+  "configuration" : { },
+  "description" : "Description",
+  "documentation" : { },
+  "id" : 1,
+  "lastModifiedAgent" : "structurizr-ui",
+  "lastModifiedDate" : "2025-08-03T14:22:34Z",
+  "model" : {
+    "people" : [ {
+      "description" : "Пользователь приложения для знакомств",
+      "id" : "1",
+      "location" : "Unspecified",
+      "name" : "Пользователь",
+      "properties" : {
+        "structurizr.dsl.identifier" : "user"
+      },
+      "relationships" : [ {
+        "description" : "HTTP-запросы к веб-приложению",
+        "destinationId" : "13",
+        "id" : "14",
+        "sourceId" : "1",
+        "tags" : "Relationship",
+        "technology" : "HTTP/JSON"
+      }, {
+        "description" : "HTTP-запросы к веб-приложению",
+        "destinationId" : "3",
+        "id" : "15",
+        "linkedRelationshipId" : "14",
+        "sourceId" : "1",
+        "technology" : "HTTP/JSON"
+      } ],
+      "tags" : "Element,Person"
+    } ],
+    "softwareSystems" : [ {
+      "description" : "Облачное хранилище для фотографий пользователей",
+      "documentation" : { },
+      "id" : "2",
+      "location" : "Unspecified",
+      "name" : "AWS S3",
+      "properties" : {
+        "structurizr.dsl.identifier" : "s3"
+      },
+      "tags" : "Element,Software System,thirdparty"
+    }, {
+      "containers" : [ {
+        "description" : "Регистрация, вход, токены",
+        "documentation" : { },
+        "id" : "4",
+        "name" : "Auth API",
+        "properties" : {
+          "structurizr.dsl.identifier" : "auth"
+        },
+        "relationships" : [ {
+          "description" : "Читает и сохраняет данные пользователя",
+          "destinationId" : "11",
+          "id" : "20",
+          "sourceId" : "4",
+          "tags" : "Relationship",
+          "technology" : "SQL/ORM"
+        }, {
+          "description" : "Сохраняет и извлекает токены/сессии",
+          "destinationId" : "12",
+          "id" : "21",
+          "sourceId" : "4",
+          "tags" : "Relationship",
+          "technology" : "Redis protocol"
+        } ],
+        "tags" : "Element,Container,backend",
+        "technology" : "FastAPI + SQLAlchemy"
+      }, {
+        "description" : "Управляет личными данными пользователя",
+        "documentation" : { },
+        "id" : "5",
+        "name" : "User Profile Service",
+        "properties" : {
+          "structurizr.dsl.identifier" : "user_profile"
+        },
+        "relationships" : [ {
+          "description" : "Запросы на загрузку, удаление, получение изображений",
+          "destinationId" : "6",
+          "id" : "22",
+          "sourceId" : "5",
+          "tags" : "Relationship",
+          "technology" : "HTTP/JSON"
+        }, {
+          "description" : "Чтение и обновление данных профиля",
+          "destinationId" : "11",
+          "id" : "26",
+          "sourceId" : "5",
+          "tags" : "Relationship",
+          "technology" : "SQL/ORM"
+        }, {
+          "description" : "Кэширует информацию профиля",
+          "destinationId" : "12",
+          "id" : "27",
+          "sourceId" : "5",
+          "tags" : "Relationship",
+          "technology" : "Redis protocol"
+        } ],
+        "tags" : "Element,Container,backend",
+        "technology" : "FastAPI"
+      }, {
+        "description" : "Прокси-сервис для работы с изображениями",
+        "documentation" : { },
+        "id" : "6",
+        "name" : "Image Service",
+        "properties" : {
+          "structurizr.dsl.identifier" : "image_service"
+        },
+        "relationships" : [ {
+          "description" : "Загрузка и удаление изображений",
+          "destinationId" : "2",
+          "id" : "23",
+          "sourceId" : "6",
+          "tags" : "Relationship",
+          "technology" : "HTTPS (AWS SDK)"
+        }, {
+          "description" : "Сохраняет метаданные изображений (URL, ключи и т.п.)",
+          "destinationId" : "11",
+          "id" : "25",
+          "sourceId" : "6",
+          "tags" : "Relationship",
+          "technology" : "SQL/ORM"
+        } ],
+        "tags" : "Element,Container,backend",
+        "technology" : "FastAPI + boto3"
+      }, {
+        "description" : "Лента просмотра профилей",
+        "documentation" : { },
+        "id" : "7",
+        "name" : "Profile Deck Service",
+        "properties" : {
+          "structurizr.dsl.identifier" : "profile_deck"
+        },
+        "relationships" : [ {
+          "description" : "Чтение анкет пользователей",
+          "destinationId" : "11",
+          "id" : "28",
+          "sourceId" : "7",
+          "tags" : "Relationship",
+          "technology" : "SQL/ORM"
+        }, {
+          "description" : "Кэш популярных профилей",
+          "destinationId" : "12",
+          "id" : "29",
+          "sourceId" : "7",
+          "tags" : "Relationship",
+          "technology" : "Redis protocol"
+        } ],
+        "tags" : "Element,Container,backend",
+        "technology" : "FastAPI"
+      }, {
+        "description" : "Обработка свайпов и мэтчей",
+        "documentation" : { },
+        "id" : "8",
+        "name" : "Swipe Service",
+        "properties" : {
+          "structurizr.dsl.identifier" : "swipe"
+        },
+        "relationships" : [ {
+          "description" : "Сохраняет лайки и мэтчи",
+          "destinationId" : "11",
+          "id" : "30",
+          "sourceId" : "8",
+          "tags" : "Relationship",
+          "technology" : "SQL/ORM"
+        }, {
+          "description" : "Запрашивает данные о пользователях при мэтче",
+          "destinationId" : "5",
+          "id" : "31",
+          "sourceId" : "8",
+          "tags" : "Relationship",
+          "technology" : "HTTP/JSON"
+        }, {
+          "description" : "Публикует события мэтча",
+          "destinationId" : "10",
+          "id" : "32",
+          "sourceId" : "8",
+          "tags" : "Relationship",
+          "technology" : "Kafka topic"
+        } ],
+        "tags" : "Element,Container,backend",
+        "technology" : "FastAPI"
+      }, {
+        "description" : "Микросервис уведомлений о лайках/метчах",
+        "documentation" : { },
+        "id" : "9",
+        "name" : "Notifications",
+        "properties" : {
+          "structurizr.dsl.identifier" : "notifications"
+        },
+        "relationships" : [ {
+          "description" : "Подписывается на события мэтча",
+          "destinationId" : "10",
+          "id" : "33",
+          "sourceId" : "9",
+          "tags" : "Relationship",
+          "technology" : "Kafka topic"
+        } ],
+        "tags" : "Element,Container,backend",
+        "technology" : "FastAPI"
+      }, {
+        "description" : "Система брокера сообщений для обработки событий уведомлений",
+        "documentation" : { },
+        "id" : "10",
+        "name" : "Kafka",
+        "properties" : {
+          "structurizr.dsl.identifier" : "kafka"
+        },
+        "tags" : "Element,Container,broker",
+        "technology" : "Apache Kafka"
+      }, {
+        "description" : "Основное хранилище данных",
+        "documentation" : { },
+        "id" : "11",
+        "name" : "База данных",
+        "properties" : {
+          "structurizr.dsl.identifier" : "database"
+        },
+        "tags" : "Element,Container,database",
+        "technology" : "PostgreSQL + PostGIS"
+      }, {
+        "description" : "Redis для временных данных",
+        "documentation" : { },
+        "id" : "12",
+        "name" : "Кеш",
+        "properties" : {
+          "structurizr.dsl.identifier" : "cache"
+        },
+        "tags" : "Element,Container,cache",
+        "technology" : "Redis"
+      }, {
+        "description" : "Reverse proxy и отдача статики",
+        "documentation" : { },
+        "id" : "13",
+        "name" : "Nginx",
+        "properties" : {
+          "structurizr.dsl.identifier" : "web_server"
+        },
+        "relationships" : [ {
+          "description" : "Проксирует запросы на регистрацию, вход, выход",
+          "destinationId" : "4",
+          "id" : "16",
+          "sourceId" : "13",
+          "tags" : "Relationship",
+          "technology" : "HTTP/JSON"
+        }, {
+          "description" : "Проксирует запросы на личный профиль",
+          "destinationId" : "5",
+          "id" : "17",
+          "sourceId" : "13",
+          "tags" : "Relationship",
+          "technology" : "HTTP/JSON"
+        }, {
+          "description" : "Проксирует запросы на просмотр ленты",
+          "destinationId" : "7",
+          "id" : "18",
+          "sourceId" : "13",
+          "tags" : "Relationship",
+          "technology" : "HTTP/JSON"
+        }, {
+          "description" : "Проксирует запросы на свайпы и мэтчи",
+          "destinationId" : "8",
+          "id" : "19",
+          "sourceId" : "13",
+          "tags" : "Relationship",
+          "technology" : "HTTP/JSON"
+        } ],
+        "tags" : "Element,Container,web",
+        "technology" : "Nginx"
+      } ],
+      "documentation" : { },
+      "id" : "3",
+      "location" : "Unspecified",
+      "name" : "Приложение для знакомств Kindle",
+      "properties" : {
+        "structurizr.dsl.identifier" : "kindle"
+      },
+      "relationships" : [ {
+        "description" : "Загрузка и удаление изображений",
+        "destinationId" : "2",
+        "id" : "24",
+        "linkedRelationshipId" : "23",
+        "sourceId" : "3",
+        "technology" : "HTTPS (AWS SDK)"
+      } ],
+      "tags" : "Element,Software System"
+    } ]
+  },
+  "name" : "Name",
+  "properties" : {
+    "structurizr.dsl" : "d29ya3NwYWNlIHsKICBtb2RlbCB7CiAgICB1c2VyID0gcGVyc29uICLQn9C+0LvRjNC30L7QstCw0YLQtdC70YwiICLQn9C+0LvRjNC30L7QstCw0YLQtdC70Ywg0L/RgNC40LvQvtC20LXQvdC40Y8g0LTQu9GPINC30L3QsNC60L7QvNGB0YLQsiIKCiAgICBzMyA9IHNvZnR3YXJlU3lzdGVtICJBV1MgUzMiICLQntCx0LvQsNGH0L3QvtC1INGF0YDQsNC90LjQu9C40YnQtSDQtNC70Y8g0YTQvtGC0L7Qs9GA0LDRhNC40Lkg0L/QvtC70YzQt9C+0LLQsNGC0LXQu9C10LkiIHsKICAgICAgdGFncyAidGhpcmRwYXJ0eSIKICAgIH0KCiAgICBLaW5kbGUgPSBzb2Z0d2FyZVN5c3RlbSAi0J/RgNC40LvQvtC20LXQvdC40LUg0LTQu9GPINC30L3QsNC60L7QvNGB0YLQsiBLaW5kbGUiIHsKICAgICAgYXV0aCA9IGNvbnRhaW5lciAiQXV0aCBBUEkiICLQoNC10LPQuNGB0YLRgNCw0YbQuNGPLCDQstGF0L7QtCwg0YLQvtC60LXQvdGLIiAiRmFzdEFQSSArIFNRTEFsY2hlbXkiIHsKICAgICAgICB0YWdzICJiYWNrZW5kIgogICAgICB9CgogICAgICB1c2VyX3Byb2ZpbGUgPSBjb250YWluZXIgIlVzZXIgUHJvZmlsZSBTZXJ2aWNlIiAi0KPQv9GA0LDQstC70Y/QtdGCINC70LjRh9C90YvQvNC4INC00LDQvdC90YvQvNC4INC/0L7Qu9GM0LfQvtCy0LDRgtC10LvRjyIgIkZhc3RBUEkiIHsKICAgICAgICB0YWdzICJiYWNrZW5kIgogICAgICB9CgogICAgICBpbWFnZV9zZXJ2aWNlID0gY29udGFpbmVyICJJbWFnZSBTZXJ2aWNlIiAi0J/RgNC+0LrRgdC4LdGB0LXRgNCy0LjRgSDQtNC70Y8g0YDQsNCx0L7RgtGLINGBINC40LfQvtCx0YDQsNC20LXQvdC40Y/QvNC4IiAiRmFzdEFQSSArIGJvdG8zIiB7CiAgICAgICAgdGFncyAiYmFja2VuZCIKICAgICAgfQoKICAgICAgcHJvZmlsZV9kZWNrID0gY29udGFpbmVyICJQcm9maWxlIERlY2sgU2VydmljZSIgItCb0LXQvdGC0LAg0L/RgNC+0YHQvNC+0YLRgNCwINC/0YDQvtGE0LjQu9C10LkiICJGYXN0QVBJIiB7CiAgICAgICAgdGFncyAiYmFja2VuZCIKICAgICAgfQoKICAgICAgc3dpcGUgPSBjb250YWluZXIgIlN3aXBlIFNlcnZpY2UiICLQntCx0YDQsNCx0L7RgtC60LAg0YHQstCw0LnQv9C+0LIg0Lgg0LzRjdGC0YfQtdC5IiAiRmFzdEFQSSIgewogICAgICAgIHRhZ3MgImJhY2tlbmQiCiAgICAgIH0KCiAgICAgIG5vdGlmaWNhdGlvbnMgPSBjb250YWluZXIgIk5vdGlmaWNhdGlvbnMiICLQnNC40LrRgNC+0YHQtdGA0LLQuNGBINGD0LLQtdC00L7QvNC70LXQvdC40Lkg0L4g0LvQsNC50LrQsNGFL9C80LXRgtGH0LDRhSIgIkZhc3RBUEkiIHsKICAgICAgICB0YWdzICJiYWNrZW5kIgogICAgICB9CgogICAgICBrYWZrYSA9IGNvbnRhaW5lciAiS2Fma2EiICLQodC40YHRgtC10LzQsCDQsdGA0L7QutC10YDQsCDRgdC+0L7QsdGJ0LXQvdC40Lkg0LTQu9GPINC+0LHRgNCw0LHQvtGC0LrQuCDRgdC+0LHRi9GC0LjQuSDRg9Cy0LXQtNC+0LzQu9C10L3QuNC5IiAiQXBhY2hlIEthZmthIiB7CiAgICAgICAgdGFncyAiYnJva2VyIgogICAgICB9CgogICAgICBkYXRhYmFzZSA9IGNvbnRhaW5lciAi0JHQsNC30LAg0LTQsNC90L3Ri9GFIiAi0J7RgdC90L7QstC90L7QtSDRhdGA0LDQvdC40LvQuNGJ0LUg0LTQsNC90L3Ri9GFIiAiUG9zdGdyZVNRTCArIFBvc3RHSVMiIHsKICAgICAgICB0YWdzICJkYXRhYmFzZSIKICAgICAgfQoKICAgICAgY2FjaGUgPSBjb250YWluZXIgItCa0LXRiCIgIlJlZGlzINC00LvRjyDQstGA0LXQvNC10L3QvdGL0YUg0LTQsNC90L3Ri9GFIiAiUmVkaXMiIHsKICAgICAgICB0YWdzICJjYWNoZSIKICAgICAgfQoKICAgICAgd2ViX3NlcnZlciA9IGNvbnRhaW5lciAiTmdpbngiICJSZXZlcnNlIHByb3h5INC4INC+0YLQtNCw0YfQsCDRgdGC0LDRgtC40LrQuCIgIk5naW54IiB7CiAgICAgICAgdGFncyAid2ViIgogICAgICB9CiAgICB9CgogICAgIyDQktC30LDQuNC80L7QtNC10LnRgdGC0LLQuNGPCgogICAgdXNlciAtPiB3ZWJfc2VydmVyICJIVFRQLdC30LDQv9GA0L7RgdGLINC6INCy0LXQsS3Qv9GA0LjQu9C+0LbQtdC90LjRjiIgIkhUVFAvSlNPTiIKCiAgICB3ZWJfc2VydmVyIC0+IGF1dGggItCf0YDQvtC60YHQuNGA0YPQtdGCINC30LDQv9GA0L7RgdGLINC90LAg0YDQtdCz0LjRgdGC0YDQsNGG0LjRjiwg0LLRhdC+0LQsINCy0YvRhdC+0LQiICJIVFRQL0pTT04iCiAgICB3ZWJfc2VydmVyIC0+IHVzZXJfcHJvZmlsZSAi0J/RgNC+0LrRgdC40YDRg9C10YIg0LfQsNC/0YDQvtGB0Ysg0L3QsCDQu9C40YfQvdGL0Lkg0L/RgNC+0YTQuNC70YwiICJIVFRQL0pTT04iCiAgICB3ZWJfc2VydmVyIC0+IHByb2ZpbGVfZGVjayAi0J/RgNC+0LrRgdC40YDRg9C10YIg0LfQsNC/0YDQvtGB0Ysg0L3QsCDQv9GA0L7RgdC80L7RgtGAINC70LXQvdGC0YsiICJIVFRQL0pTT04iCiAgICB3ZWJfc2VydmVyIC0+IHN3aXBlICLQn9GA0L7QutGB0LjRgNGD0LXRgiDQt9Cw0L/RgNC+0YHRiyDQvdCwINGB0LLQsNC50L/RiyDQuCDQvNGN0YLRh9C4IiAiSFRUUC9KU09OIgoKICAgIGF1dGggLT4gZGF0YWJhc2UgItCn0LjRgtCw0LXRgiDQuCDRgdC+0YXRgNCw0L3Rj9C10YIg0LTQsNC90L3Ri9C1INC/0L7Qu9GM0LfQvtCy0LDRgtC10LvRjyIgIlNRTC9PUk0iCiAgICBhdXRoIC0+IGNhY2hlICLQodC+0YXRgNCw0L3Rj9C10YIg0Lgg0LjQt9Cy0LvQtdC60LDQtdGCINGC0L7QutC10L3Riy/RgdC10YHRgdC40LgiICJSZWRpcyBwcm90b2NvbCIKCiAgICB1c2VyX3Byb2ZpbGUgLT4gaW1hZ2Vfc2VydmljZSAi0JfQsNC/0YDQvtGB0Ysg0L3QsCDQt9Cw0LPRgNGD0LfQutGDLCDRg9C00LDQu9C10L3QuNC1LCDQv9C+0LvRg9GH0LXQvdC40LUg0LjQt9C+0LHRgNCw0LbQtdC90LjQuSIgIkhUVFAvSlNPTiIKICAgIGltYWdlX3NlcnZpY2UgLT4gczMgItCX0LDQs9GA0YPQt9C60LAg0Lgg0YPQtNCw0LvQtdC90LjQtSDQuNC30L7QsdGA0LDQttC10L3QuNC5IiAiSFRUUFMgKEFXUyBTREspIgogICAgaW1hZ2Vfc2VydmljZSAtPiBkYXRhYmFzZSAi0KHQvtGF0YDQsNC90Y/QtdGCINC80LXRgtCw0LTQsNC90L3Ri9C1INC40LfQvtCx0YDQsNC20LXQvdC40LkgKFVSTCwg0LrQu9GO0YfQuCDQuCDRgi7Qvy4pIiAiU1FML09STSIKCiAgICB1c2VyX3Byb2ZpbGUgLT4gZGF0YWJhc2UgItCn0YLQtdC90LjQtSDQuCDQvtCx0L3QvtCy0LvQtdC90LjQtSDQtNCw0L3QvdGL0YUg0L/RgNC+0YTQuNC70Y8iICJTUUwvT1JNIgogICAgdXNlcl9wcm9maWxlIC0+IGNhY2hlICLQmtGN0YjQuNGA0YPQtdGCINC40L3RhNC+0YDQvNCw0YbQuNGOINC/0YDQvtGE0LjQu9GPIiAiUmVkaXMgcHJvdG9jb2wiCgogICAgcHJvZmlsZV9kZWNrIC0+IGRhdGFiYXNlICLQp9GC0LXQvdC40LUg0LDQvdC60LXRgiDQv9C+0LvRjNC30L7QstCw0YLQtdC70LXQuSIgIlNRTC9PUk0iCiAgICBwcm9maWxlX2RlY2sgLT4gY2FjaGUgItCa0Y3RiCDQv9C+0L/Rg9C70Y/RgNC90YvRhSDQv9GA0L7RhNC40LvQtdC5IiAiUmVkaXMgcHJvdG9jb2wiCgogICAgc3dpcGUgLT4gZGF0YWJhc2UgItCh0L7RhdGA0LDQvdGP0LXRgiDQu9Cw0LnQutC4INC4INC80Y3RgtGH0LgiICJTUUwvT1JNIgogICAgc3dpcGUgLT4gdXNlcl9wcm9maWxlICLQl9Cw0L/RgNCw0YjQuNCy0LDQtdGCINC00LDQvdC90YvQtSDQviDQv9C+0LvRjNC30L7QstCw0YLQtdC70Y/RhSDQv9GA0Lgg0LzRjdGC0YfQtSIgIkhUVFAvSlNPTiIKICAgIHN3aXBlIC0+IGthZmthICLQn9GD0LHQu9C40LrRg9C10YIg0YHQvtCx0YvRgtC40Y8g0LzRjdGC0YfQsCIgIkthZmthIHRvcGljIgoKICAgIG5vdGlmaWNhdGlvbnMgLT4ga2Fma2EgItCf0L7QtNC/0LjRgdGL0LLQsNC10YLRgdGPINC90LAg0YHQvtCx0YvRgtC40Y8g0LzRjdGC0YfQsCIgIkthZmthIHRvcGljIgogIH0KCiAgdmlld3MgewogICAgc3lzdGVtQ29udGV4dCBLaW5kbGUgIlN5c3RlbUNvbnRleHQiIHsKICAgICAgaW5jbHVkZSAqCiAgICAgIC8vYXV0b2xheW91dCB0YgogICAgfQoKICAgIGNvbnRhaW5lciBLaW5kbGUgIkNvbnRhaW5lclZpZXciIHsKICAgICAgaW5jbHVkZSAqCiAgICAgIC8vYXV0b2xheW91dCBscgogICAgfQoKICAgIHN0eWxlcyB7CiAgICAgIGVsZW1lbnQgImRhdGFiYXNlIiB7CiAgICAgICAgc2hhcGUgY3lsaW5kZXIKICAgICAgICBiYWNrZ3JvdW5kICMzMzY2Y2MKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KCiAgICAgIGVsZW1lbnQgImNhY2hlIiB7CiAgICAgICAgc2hhcGUgcGlwZQogICAgICAgIGJhY2tncm91bmQgI2NjMDAwMAogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgfQoKICAgICAgZWxlbWVudCAidGhpcmRwYXJ0eSIgewogICAgICAgIGJhY2tncm91bmQgI2VlZWVlZQogICAgICAgIGNvbG9yICMwMDAwMDAKICAgICAgICBzaGFwZSBmb2xkZXIKICAgICAgfQoKICAgICAgZWxlbWVudCAid2ViIiB7CiAgICAgICAgc2hhcGUgd2ViYnJvd3NlcgogICAgICAgIGJhY2tncm91bmQgIzFlOTBmZgogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgfQoKICAgICAgZWxlbWVudCAiYmFja2VuZCIgewogICAgICAgIHNoYXBlIHJvdW5kZWRib3gKICAgICAgICBiYWNrZ3JvdW5kICM0Y2FmNTAKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KCiAgICAgIGVsZW1lbnQgImJyb2tlciIgewogICAgICAgIHNoYXBlIHBpcGUKICAgICAgICBiYWNrZ3JvdW5kICNmZjk5MDAKICAgICAgICBjb2xvciAjMDAwMDAwCiAgICAgIH0KICAgIH0KCiAgICB0aGVtZSBkZWZhdWx0CiAgfQp9"
+  },
+  "views" : {
+    "configuration" : {
+      "branding" : { },
+      "lastSavedView" : "SystemContext",
+      "metadataSymbols" : "SquareBrackets",
+      "styles" : {
+        "elements" : [ {
+          "background" : "#3366cc",
+          "color" : "#ffffff",
+          "shape" : "Cylinder",
+          "tag" : "database"
+        }, {
+          "background" : "#cc0000",
+          "color" : "#ffffff",
+          "shape" : "Pipe",
+          "tag" : "cache"
+        }, {
+          "background" : "#eeeeee",
+          "color" : "#000000",
+          "shape" : "Folder",
+          "tag" : "thirdparty"
+        }, {
+          "background" : "#1e90ff",
+          "color" : "#ffffff",
+          "shape" : "WebBrowser",
+          "tag" : "web"
+        }, {
+          "background" : "#4caf50",
+          "color" : "#ffffff",
+          "shape" : "RoundedBox",
+          "tag" : "backend"
+        }, {
+          "background" : "#ff9900",
+          "color" : "#000000",
+          "shape" : "Pipe",
+          "tag" : "broker"
+        } ]
+      },
+      "terminology" : { },
+      "themes" : [ "https://static.structurizr.com/themes/default/theme.json" ]
+    },
+    "containerViews" : [ {
+      "dimensions" : {
+        "height" : 3336,
+        "width" : 4620
+      },
+      "elements" : [ {
+        "id" : "1",
+        "x" : 199,
+        "y" : 1314
+      }, {
+        "id" : "2",
+        "x" : 3945,
+        "y" : 3015
+      }, {
+        "id" : "4",
+        "x" : 2449,
+        "y" : 785
+      }, {
+        "id" : "5",
+        "x" : 2240,
+        "y" : 2610
+      }, {
+        "id" : "6",
+        "x" : 3199,
+        "y" : 2293
+      }, {
+        "id" : "7",
+        "x" : 2480,
+        "y" : 175
+      }, {
+        "id" : "8",
+        "x" : 1699,
+        "y" : 1839
+      }, {
+        "id" : "9",
+        "x" : 1699,
+        "y" : 1239
+      }, {
+        "id" : "10",
+        "x" : 2449,
+        "y" : 1385
+      }, {
+        "id" : "11",
+        "x" : 4170,
+        "y" : 1625
+      }, {
+        "id" : "12",
+        "x" : 3199,
+        "y" : 1076
+      }, {
+        "id" : "13",
+        "x" : 949,
+        "y" : 1314
+      } ],
+      "externalSoftwareSystemBoundariesVisible" : false,
+      "key" : "ContainerView",
+      "order" : 2,
+      "relationships" : [ {
+        "id" : "14"
+      }, {
+        "id" : "16",
+        "vertices" : [ {
+          "x" : 1699,
+          "y" : 1089
+        } ]
+      }, {
+        "id" : "17",
+        "vertices" : [ {
+          "x" : 1699,
+          "y" : 2289
+        } ]
+      }, {
+        "id" : "18",
+        "vertices" : [ {
+          "x" : 1699,
+          "y" : 976
+        } ]
+      }, {
+        "id" : "19"
+      }, {
+        "id" : "20",
+        "vertices" : [ {
+          "x" : 3199,
+          "y" : 926
+        }, {
+          "x" : 3649,
+          "y" : 926
+        } ]
+      }, {
+        "id" : "21"
+      }, {
+        "id" : "22"
+      }, {
+        "id" : "23"
+      }, {
+        "id" : "25"
+      }, {
+        "id" : "26",
+        "vertices" : [ {
+          "x" : 3199,
+          "y" : 2143
+        } ]
+      }, {
+        "id" : "27"
+      }, {
+        "id" : "28",
+        "vertices" : [ {
+          "x" : 3740,
+          "y" : 785
+        } ]
+      }, {
+        "id" : "29"
+      }, {
+        "id" : "30"
+      }, {
+        "id" : "31"
+      }, {
+        "id" : "32"
+      }, {
+        "id" : "33"
+      } ],
+      "softwareSystemId" : "3"
+    } ],
+    "systemContextViews" : [ {
+      "dimensions" : {
+        "height" : 1748,
+        "width" : 2480
+      },
+      "elements" : [ {
+        "id" : "1",
+        "x" : 1145,
+        "y" : -15
+      }, {
+        "id" : "2",
+        "x" : 1135,
+        "y" : 1300
+      }, {
+        "id" : "3",
+        "x" : 1135,
+        "y" : 730
+      } ],
+      "enterpriseBoundaryVisible" : true,
+      "key" : "SystemContext",
+      "order" : 1,
+      "paperSize" : "A5_Landscape",
+      "relationships" : [ {
+        "id" : "15"
+      }, {
+        "id" : "24"
+      } ],
+      "softwareSystemId" : "3"
+    } ]
+  }
+}

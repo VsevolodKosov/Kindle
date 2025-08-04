@@ -29,10 +29,8 @@ dist/
 .env
 .env.*
 
-# SQLite базы (если вдруг)
-*.sqlite3
 
-# Кэш pip, poetry, uv
+# uv, pip
 pip-wheel-metadata/
 .uv-cache/
 
@@ -41,18 +39,6 @@ pip-wheel-metadata/
 
 # PyCharm
 .idea/
-
-# MacOS
-.DS_Store
-
-# Windows
-Thumbs.db
-ehthumbs.db
-
-# Coverage reports
-htmlcov/
-.coverage
-.coverage.*
 
 # Mypy
 .mypy_cache/
@@ -63,14 +49,11 @@ htmlcov/
 # celery beat schedule file
 celerybeat-schedule
 
-# Redis dump (если используешь локальный)
+# Redis dump
 dump.rdb
 
 # Docker files
 docker-compose.override.yml
-
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
 
 #C4
 C4/.structurizr/

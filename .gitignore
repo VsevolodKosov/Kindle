@@ -4,10 +4,11 @@ venv/
 env/
 ENV/
 
-# Python cache
+# Python  and ruff cache
 __pycache__/
 *.py[cod]
 *$py.class
+.ruff_cache
 
 # Артефакты сборки
 build/
@@ -70,3 +71,7 @@ docker-compose.override.yml
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
+
+#C4
+C4/.structurizr/
+C4/workspace.json

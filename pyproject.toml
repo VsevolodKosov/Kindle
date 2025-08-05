@@ -13,6 +13,7 @@ dependencies = [
     "boto3",
     "httpx",
     "redis",
+    "geoalchemy2>=0.18.0",
 ]
 
 [project.optional-dependencies]

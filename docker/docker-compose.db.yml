@@ -1,7 +1,7 @@
 services:
   kindle_db_prod:
     container_name: kindle_db_prod
-    image: postgis/postgis:15-3.3-alpine
+    image: postgres:15-alpine
     restart: always
     env_file:
       - ../env/.env.db_prod
@@ -14,7 +14,7 @@ services:
 
   kindle_db_test:
     container_name: kindle_db_test
-    image: postgis/postgis:15-3.3-alpine
+    image: postgres:15-alpine
     restart: always
     env_file:
       - ../env/.env.db_test

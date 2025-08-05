@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
-from main import Base #Не забыть изменить на рельные метаданные
+from src.models import Base
 target_metadata = Base.metadata
 
 environment = os.getenv("APP_ENV", "prod")

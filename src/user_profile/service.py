@@ -79,6 +79,14 @@ async def get_photos_by_user(
         photos = await photo_dao.get_photos_by_user(user_id=user_id)
     return [UserPhotoRead.from_orm_obj(photo) for photo in photos]
 
+async def get_photo_by_id(
+    photo_id: int, db_session: AsyncSession
+) -> Optional[UserPhotoRead]:
+    async with db_session.begin():
+        photo_dao = UserPhotoDAO(db_session)
+        photo = await photo_dao.get_photo_by_id(photo_id=photo_id)
+        return UserPhotoRead.from_orm_obj(photo)
+
 
 async def delete_photo(
     photo_id: int, db_session: AsyncSession
@@ -110,6 +118,14 @@ async def get_links_by_user(
         links = await link_dao.get_links_by_user(user_id)
     return [UserSocialMediaLinkRead.from_orm_obj(link) for link in links]
 
+async def get_link_by_id(
+    link_id: int, db_session: AsyncSession
+) -> Optional[UserSocialMediaLinkRead]:
+    async with db_session.begin():
+        link_dao = UserSocialMediaLinkDAO(db_session)
+        link = await link_dao.get_photo_by_id(link_id=link_id)
+        return UserSocialMediaLinkRead.from_orm_obj(link)
+
 
 async def delete_social_link(
     link_id: int, db_session: AsyncSession
@@ -134,6 +150,15 @@ async def get_all_languages(db_session: AsyncSession) -> List[LanguageRead]:
         language_dao = LanguageDAO(db_session)
         languages = await language_dao.get_all_languages()
     return [LanguageRead.from_orm_obj(lang) for lang in languages]
+
+async def get_language_by_id(
+    language_id: int, db_session: AsyncSession
+) -> Optional[LanguageRead]:
+    async with db_session.begin():
+        language_dao = LanguageDAO(db_session)
+        language = await language_dao.get_photo_by_id(language_id=language_id)
+        return LanguageRead.from_orm_obj(language)
+
 
 
 async def delete_language(

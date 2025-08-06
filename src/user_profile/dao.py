@@ -106,6 +106,11 @@ class UserSocialMediaLinkDAO:
         db_response = await self.db_session.execute(db_query)
         return db_response.scalars().all()
 
+    async def get_link_id(self, id: int) -> Optional[UserSocialMediaLink]:
+        db_query = select(UserSocialMediaLink).where(UserSocialMediaLink.id == id)
+        db_responce = await self.db_session.execute(db_query)
+        return db_responce.fetchone()
+
     async def update_link(self, id: int, **kwargs) -> Optional[UserSocialMediaLink]:
         db_query = (
             update(UserSocialMediaLink)
@@ -153,6 +158,11 @@ class UserPhotoDAO:
         db_response = await self.db_session.execute(db_query)
         return db_response.scalars().all()
 
+    async def get_photo_by_id(self, id: int) -> Optional[UserPhoto]:
+        db_query = select(UserPhoto).where(UserPhoto.id == id)
+        db_responce = await self.db_session.execute(db_query)
+        return db_responce.fetchone()
+
     async def update_photo(self, id: int, **kwargs) -> Optional[UserPhoto]:
         db_query = (
             update(UserPhoto)
@@ -190,6 +200,11 @@ class LanguageDAO:
         db_query = select(Language)
         db_response = await self.db_session.execute(db_query)
         return db_response.scalars().all()
+
+    async def get_language_by_id(self, id: int) -> Optional[Language]:
+        db_query = select(Language).where(Language.id == id)
+        db_responce = await self.db_session.execute(db_query)
+        return db_responce.fetchone()
 
     async def update_language(self, id: int, **kwargs) -> Optional[Language]:
         db_query = (

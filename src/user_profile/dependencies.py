@@ -6,7 +6,7 @@ from fastapi import Depends
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database import get_async_session
+from src.database import get_db_async_session
 from src.user_profile import service
 from src.user_profile.schemas import LanguageRead
 from src.user_profile.schemas import UserLanguageRead
@@ -17,9 +17,9 @@ from src.user_profile.schemas import UserSocialMediaLinkRead
 
 async def get_user(
     user_id: UUID,
-    session: AsyncSession = Depends(get_async_session),
+    db_session: AsyncSession = Depends(get_db_async_session),
 ) -> Optional[UserRead]:
-    return await service.get_user(user_id, session)
+    return await service.get_user(user_id, db_session)
 
 
 async def validate_user_exists(
@@ -32,9 +32,9 @@ async def validate_user_exists(
 
 async def get_photo(
     photo_id: int,
-    session: AsyncSession = Depends(get_async_session),
+    db_session: AsyncSession = Depends(get_db_async_session),
 ) -> Optional[UserPhotoRead]:
-    return await service.get_photo(photo_id, session)
+    return await service.get_photo_by_id(photo_id, db_session)
 
 
 async def validate_photo_exists(
@@ -47,9 +47,9 @@ async def validate_photo_exists(
 
 async def get_social_link(
     link_id: int,
-    session: AsyncSession = Depends(get_async_session),
+    db_session: AsyncSession = Depends(get_db_async_session),
 ) -> Optional[UserSocialMediaLinkRead]:
-    return await service.get_social_link(link_id, session)
+    return await service.get_link_by_id(link_id, db_session)
 
 
 async def validate_social_link_exists(
@@ -62,9 +62,9 @@ async def validate_social_link_exists(
 
 async def get_language(
     language_id: int,
-    session: AsyncSession = Depends(get_async_session),
+    db_session: AsyncSession = Depends(get_db_async_session),
 ) -> Optional[LanguageRead]:
-    return await service.get_language(language_id, session)
+    return await service.get_language_by_id(language_id, db_session)
 
 
 async def validate_language_exists(
@@ -77,9 +77,9 @@ async def validate_language_exists(
 
 async def get_user_languages(
     user_id: UUID,
-    session: AsyncSession = Depends(get_async_session),
+    db_session: AsyncSession = Depends(get_db_async_session),
 ) -> List[UserLanguageRead]:
-    return await service.get_languages_by_user(user_id, session)
+    return await service.get_languages_by_user(user_id, db_session)
 
 
 async def validate_user_language_exists(

@@ -7,6 +7,8 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from src.models import Base
+
+#Придумать как импортировать модели, иначе миграции будут не автоматическими
 target_metadata = Base.metadata
 
 environment = os.getenv("APP_ENV", "prod")

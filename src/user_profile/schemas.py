@@ -54,6 +54,22 @@ class UserRead(BaseModel):
         )
 
 
+class UserUpdate(BaseModel):
+    username: Optional[UsernameStr] = None
+    email: Optional[EmailStr] = None
+    bio: Optional[Optional[str]] = None  # Allow explicit null
+    gender: Optional[GenderStr] = None
+    country: Optional[CountryCityStr] = None
+    city: Optional[CountryCityStr] = None
+
+    @field_validator("gender")
+    @classmethod
+    def gender_must_be_m_or_f(cls, v):
+        if v is not None and v not in ("m", "f"):
+            raise ValueError("Gender must be 'm' or 'f'")
+        return v
+
+
 class LanguageCreate(BaseModel):
     name: LanguageNameStr
 
@@ -68,6 +84,10 @@ class LanguageRead(BaseModel):
             id=language.id,
             name=language.name,
         )
+
+
+class LanguageUpdate(BaseModel):
+    name: Optional[LanguageNameStr] = None
 
 
 class UserLanguageCreate(BaseModel):
@@ -109,6 +129,11 @@ class UserSocialMediaLinkRead(BaseModel):
         )
 
 
+class UserSocialMediaLinkUpdate(BaseModel):
+    title: Optional[TitleStr] = None
+    link: Optional[LinkStr] = None
+
+
 class UserPhotoCreate(BaseModel):
     user_id: UUID
     url: UrlStr
@@ -129,3 +154,8 @@ class UserPhotoRead(BaseModel):
             url=photo.url,
             description=photo.description,
         )
+
+
+class UserPhotoUpdate(BaseModel):
+    url: Optional[UrlStr] = None
+    description: Optional[Optional[str]] = None

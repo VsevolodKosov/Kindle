@@ -3,7 +3,7 @@ import pathlib
 
 from dotenv import load_dotenv
 
-env_path = pathlib.Path(__file__).parent.parent / "env" / ".env.db_prod"
+env_path = pathlib.Path(__file__).parent.parent / "env" / ".env.db_test"
 load_dotenv(dotenv_path=env_path)
 
 DATABASE_URL = (

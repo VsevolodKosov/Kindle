@@ -4,7 +4,9 @@ from typing import AsyncGenerator
 
 import asyncpg
 import pytest
+from httpx import ASGITransport
 from httpx import AsyncClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -18,8 +20,9 @@ CLEAN_TABLES = [
     "user_social_media_links",
     "user_languages",
     "languages",
-    "users"
+    "users",
 ]
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -27,24 +30,24 @@ def event_loop():
     yield loop
     loop.close()
 
+
 @pytest.fixture(scope="session")
 async def async_session_test():
     engine = create_async_engine(TEST_DATABASE_URL, future=True, echo=True)
     async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     yield async_session
 
+
 @pytest.fixture(scope="function", autouse=True)
 async def clean_tables_db(async_session_test):
     async with async_session_test() as db_session:
         async with db_session.begin():
             for table in CLEAN_TABLES:
-                await db_session.execute(
-                    f"TRUNCATE TABLE {table} CASCADE;"
-                )
+                await db_session.execute(text(f"TRUNCATE TABLE {table} CASCADE;"))
+
+
 async def get_test_db_async_session() -> AsyncGenerator[AsyncSession, None]:
-    test_engine = create_async_engine(
-        TEST_DATABASE_URL, future=True, echo=True
-    )
+    test_engine = create_async_engine(TEST_DATABASE_URL, future=True, echo=True)
     test_async_session = sessionmaker(
         test_engine, expire_on_commit=False, class_=AsyncSession
     )
@@ -59,8 +62,14 @@ async def get_test_db_async_session() -> AsyncGenerator[AsyncSession, None]:
 @pytest.fixture(scope="function")
 async def client() -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides[get_db_async_session] = get_test_db_async_session
-    async with AsyncClient(app=app, base_url="http://testserver") as async_client:
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as async_client:
         yield async_client
+
 
 @pytest.fixture(scope="session")
 async def asyncpg_pool():
@@ -68,10 +77,10 @@ async def asyncpg_pool():
     yield pool
     await pool.close()
 
+
 @pytest.fixture
-def get_data_user():
+def data_user():
     return {
-        "id": None,
         "username": "Ivan",
         "email": "Ivan_Ivanov@mail.com",
         "bio": "A handsome and smart man",
@@ -80,10 +89,11 @@ def get_data_user():
         "city": "Moscow",
     }
 
+
 @pytest.fixture
-async def create_user(asyncpg_pool, get_data_user):
+async def create_user(asyncpg_pool, data_user):
     async def _create_user(data=None):
-        data = deepcopy(data or get_data_user)
+        data = deepcopy(data or data_user)
         async with asyncpg_pool.acquire() as conn:
             record = await conn.fetchrow(
                 """
@@ -96,18 +106,22 @@ async def create_user(asyncpg_pool, get_data_user):
                 data["bio"],
                 data["gender"],
                 data["country"],
-                data["city"]
+                data["city"],
             )
             data["id"] = record["id"]
         return data
+
     return _create_user
+
 
 @pytest.fixture
 async def get_user(asyncpg_pool):
     async def _get_user(id):
         async with asyncpg_pool.acquire() as conn:
             return await conn.fetchrow("SELECT * FROM users WHERE id = $1", id)
+
     return _get_user
+
 
 @pytest.fixture
 async def update_user(asyncpg_pool):
@@ -161,37 +175,43 @@ async def update_user(asyncpg_pool):
 
     return _update_user
 
+
 @pytest.fixture
 async def delete_user(asyncpg_pool):
     async def _delete_user(id):
         async with asyncpg_pool.acquire() as conn:
             await conn.execute("DELETE FROM users WHERE id = $1", id)
+
     return _delete_user
 
 
 @pytest.fixture
-def get_data_language():
+def data_language():
     return {"name": "English"}
 
+
 @pytest.fixture
-async def create_language(asyncpg_pool, get_data_language):
+async def create_language(asyncpg_pool, data_language):
     async def _create_language(data=None):
-        data = deepcopy(data or get_data_language)
+        data = deepcopy(data or data_language)
         async with asyncpg_pool.acquire() as conn:
             record = await conn.fetchrow(
-                "INSERT INTO languages(name) VALUES($1) RETURNING id",
-                data["name"]
+                "INSERT INTO languages(name) VALUES($1) RETURNING id", data["name"]
             )
             data["id"] = record["id"]
         return data
+
     return _create_language
+
 
 @pytest.fixture
 async def get_language(asyncpg_pool):
     async def _get_language(id):
         async with asyncpg_pool.acquire() as conn:
             return await conn.fetchrow("SELECT * FROM languages WHERE id = $1", id)
+
     return _get_language
+
 
 @pytest.fixture
 async def update_language(asyncpg_pool):
@@ -210,13 +230,16 @@ async def update_language(asyncpg_pool):
         query = f"UPDATE languages SET {set_clause} WHERE id = ${idx}"
         async with asyncpg_pool.acquire() as conn:
             await conn.execute(query, *values)
+
     return _update_language
+
 
 @pytest.fixture
 async def delete_language(asyncpg_pool):
     async def _delete_language(id):
         async with asyncpg_pool.acquire() as conn:
             await conn.execute("DELETE FROM languages WHERE id = $1", id)
+
     return _delete_language
 
 
@@ -226,9 +249,12 @@ async def create_user_language(asyncpg_pool):
         async with asyncpg_pool.acquire() as conn:
             await conn.execute(
                 "INSERT INTO user_languages(user_id, language_id) VALUES($1, $2)",
-                user_id, language_id
+                user_id,
+                language_id,
             )
+
     return _create_user_language
+
 
 @pytest.fixture
 async def delete_user_language(asyncpg_pool):
@@ -236,23 +262,26 @@ async def delete_user_language(asyncpg_pool):
         async with asyncpg_pool.acquire() as conn:
             await conn.execute(
                 "DELETE FROM user_languages WHERE user_id = $1 AND language_id = $2",
-                user_id, language_id
+                user_id,
+                language_id,
             )
+
     return _delete_user_language
 
 
 @pytest.fixture
-def get_data_user_social_media_link():
+def data_user_social_media_link():
     return {
         "user_id": None,
         "title": "Facebook",
-        "link": "https://facebook.com/ivan"
+        "link": "https://facebook.com/ivan",
     }
 
+
 @pytest.fixture
-async def create_user_social_media_link(asyncpg_pool, get_data_user_social_media_link):
+async def create_user_social_media_link(asyncpg_pool, data_user_social_media_link):
     async def _create_link(data=None):
-        data = deepcopy(data or get_data_user_social_media_link)
+        data = deepcopy(data or data_user_social_media_link)
         async with asyncpg_pool.acquire() as conn:
             record = await conn.fetchrow(
                 """
@@ -260,11 +289,15 @@ async def create_user_social_media_link(asyncpg_pool, get_data_user_social_media
                 VALUES($1, $2, $3)
                 RETURNING id
                 """,
-                data["user_id"], data["title"], data["link"]
+                data["user_id"],
+                data["title"],
+                data["link"],
             )
             data["id"] = record["id"]
         return data
+
     return _create_link
+
 
 @pytest.fixture
 async def get_user_social_media_link(asyncpg_pool):
@@ -273,7 +306,9 @@ async def get_user_social_media_link(asyncpg_pool):
             return await conn.fetchrow(
                 "SELECT * FROM user_social_media_links WHERE id = $1", id
             )
+
     return _get_link
+
 
 @pytest.fixture
 async def update_user_social_media_link(asyncpg_pool):
@@ -292,7 +327,9 @@ async def update_user_social_media_link(asyncpg_pool):
         query = f"UPDATE user_social_media_links SET {set_clause} WHERE id = ${idx}"
         async with asyncpg_pool.acquire() as conn:
             await conn.execute(query, *values)
+
     return _update_link
+
 
 @pytest.fixture
 async def delete_user_social_media_link(asyncpg_pool):
@@ -301,20 +338,22 @@ async def delete_user_social_media_link(asyncpg_pool):
             await conn.execute(
                 "DELETE FROM user_social_media_links WHERE id = $1", id
             )
+
     return _delete_link
 
 
 @pytest.fixture
-def get_data_user_photo():
+def data_user_photo():
     return {
         "user_id": None,
-        "photo_link": "https://example.com/photo.jpg"
+        "photo_link": "https://example.com/photo.jpg",
     }
 
+
 @pytest.fixture
-async def create_user_photo(asyncpg_pool, get_data_user_photo):
+async def create_user_photo(asyncpg_pool, data_user_photo):
     async def _create_photo(data=None):
-        data = deepcopy(data or get_data_user_photo)
+        data = deepcopy(data or data_user_photo)
         async with asyncpg_pool.acquire() as conn:
             record = await conn.fetchrow(
                 """
@@ -322,18 +361,25 @@ async def create_user_photo(asyncpg_pool, get_data_user_photo):
                 VALUES($1, $2)
                 RETURNING id
                 """,
-                data["user_id"], data["photo_link"]
+                data["user_id"],
+                data["photo_link"],
             )
             data["id"] = record["id"]
         return data
+
     return _create_photo
+
 
 @pytest.fixture
 async def get_user_photo(asyncpg_pool):
     async def _get_photo(id):
         async with asyncpg_pool.acquire() as conn:
-            return await conn.fetchrow("SELECT * FROM user_photos WHERE id = $1", id)
+            return await conn.fetchrow(
+                "SELECT * FROM user_photos WHERE id = $1", id
+            )
+
     return _get_photo
+
 
 @pytest.fixture
 async def update_user_photo(asyncpg_pool):
@@ -352,11 +398,14 @@ async def update_user_photo(asyncpg_pool):
         query = f"UPDATE user_photos SET {set_clause} WHERE id = ${idx}"
         async with asyncpg_pool.acquire() as conn:
             await conn.execute(query, *values)
+
     return _update_photo
+
 
 @pytest.fixture
 async def delete_user_photo(asyncpg_pool):
     async def _delete_photo(id):
         async with asyncpg_pool.acquire() as conn:
             await conn.execute("DELETE FROM user_photos WHERE id = $1", id)
+
     return _delete_photo

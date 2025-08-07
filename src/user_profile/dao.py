@@ -47,6 +47,12 @@ class UserDAO:
         user = db_response.scalars().first()
         return user
 
+    async def get_user_by_email(self, email: str) -> Optional[User]:
+        db_query = select(User).where(User.email == email)
+        db_response = await self.db_session.execute(db_query)
+        user = db_response.scalars().first()
+        return user
+
     async def delete_user(self, id: UUID) -> Optional[User]:
         db_query = (
             delete(User)

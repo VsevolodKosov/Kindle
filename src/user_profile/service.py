@@ -42,6 +42,13 @@ async def get_user(id: UUID, db_session: AsyncSession) -> Optional[UserRead]:
     return UserRead.from_orm_obj(user) if user else None
 
 
+async def get_user_by_email(email: str, db_session: AsyncSession) -> Optional[UserRead]:
+    async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        user = await user_dao.get_user_by_email(email=email)
+    return UserRead.from_orm_obj(user) if user else None
+
+
 async def update_user(
     updated_user_params: dict, id: UUID, db_session: AsyncSession
 ) -> Optional[UserRead]:

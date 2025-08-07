@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_db_async_session
 from src.user_profile import service
 from src.user_profile.dependencies import get_user_languages
+from src.user_profile.dependencies import validate_email_unique
 from src.user_profile.dependencies import validate_language_exists
 from src.user_profile.dependencies import validate_photo_exists
 from src.user_profile.dependencies import validate_social_link_exists
@@ -42,6 +43,8 @@ async def create_user(
     data: UserCreate,
     db_session: AsyncSession = Depends(get_db_async_session),
 ):
+    # Валидируем email перед созданием пользователя
+    await validate_email_unique(data.email, db_session)
     new_user = await service.create_user(data, db_session)
     return new_user
 

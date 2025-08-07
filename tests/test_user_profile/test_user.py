@@ -3,7 +3,6 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_create_user(client, data_user):
-    data_user = data_user
     response = await client.post("/users/", json=data_user)
     assert response.status_code == 200
     data = response.json()

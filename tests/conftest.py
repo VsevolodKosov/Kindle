@@ -24,18 +24,19 @@ CLEAN_TABLES = [
 ]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 async def async_session_test():
     engine = create_async_engine(TEST_DATABASE_URL, future=True, echo=True)
     async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     yield async_session
+    await engine.dispose()
 
 
 @pytest.fixture(scope="function", autouse=True)

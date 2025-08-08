@@ -72,8 +72,10 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
     ) as async_client:
         yield async_client
 
+
+
 @pytest.fixture
-def get_data_user():
+def data_user():
     return {
         "username": "Ivan",
         "email": "Ivan_Ivanov@mail.com",
@@ -84,9 +86,9 @@ def get_data_user():
     }
 
 @pytest.fixture
-async def create_user(async_session_test, get_data_user):
+async def create_user(async_session_test, data_user):
     async def _create_user(data=None):
-        data = deepcopy(data or get_data_user)
+        data = deepcopy(data or data_user)
         async with async_session_test() as session:
             user = User(**data)
             session.add(user)

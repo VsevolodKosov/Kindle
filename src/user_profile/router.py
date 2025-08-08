@@ -8,6 +8,7 @@ from src.database import get_db_async_session
 from src.user_profile import service
 from src.user_profile.dependencies import get_user_languages
 from src.user_profile.dependencies import validate_email_unique
+from src.user_profile.dependencies import validate_email_unique_for_update
 from src.user_profile.dependencies import validate_language_exists
 from src.user_profile.dependencies import validate_photo_exists
 from src.user_profile.dependencies import validate_social_link_exists
@@ -43,10 +44,14 @@ async def create_user(
     data: UserCreate,
     db_session: AsyncSession = Depends(get_db_async_session),
 ):
-    # Валидируем email перед созданием пользователя
+    # Валидация email через dependency
     await validate_email_unique(data.email, db_session)
-    new_user = await service.create_user(data, db_session)
-    return new_user
+    try:
+        new_user = await service.create_user(data, db_session)
+        return new_user
+    except Exception:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail="Validation error")
 
 
 @user_profile_router.patch("/", response_model=UserRead)
@@ -55,8 +60,12 @@ async def update_user(
     user: UserRead = Depends(validate_user_exists),
     db_session: AsyncSession = Depends(get_db_async_session),
 ):
+    # Валидация email если он обновляется
+    if user_update.email:
+        await validate_email_unique_for_update(user_update.email, user.id, db_session)
+
     updated_user = await service.update_user(
-        user_update.dict(exclude_unset=True),
+        user_update.model_dump(exclude_unset=True),
         user.id,
         db_session,
     )

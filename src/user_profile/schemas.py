@@ -7,9 +7,15 @@ from pydantic import constr
 from pydantic import EmailStr
 from pydantic import field_validator
 
-UsernameStr = Annotated[str, constr(min_length=3, max_length=50)]
-GenderStr = Annotated[str, constr(min_length=1, max_length=1)]
-CountryCityStr = Annotated[str, constr(min_length=1, max_length=100)]
+UsernameStr = Annotated[
+    str, constr(min_length=3, max_length=50, strip_whitespace=True)
+]
+GenderStr = Annotated[
+    str, constr(min_length=1, max_length=1, strip_whitespace=True)
+]
+CountryCityStr = Annotated[
+    str, constr(min_length=1, max_length=100, strip_whitespace=True)
+]
 TitleStr = Annotated[str, constr(min_length=1, max_length=100)]
 LinkStr = Annotated[str, constr(min_length=1, max_length=255)]
 UrlStr = Annotated[str, constr(min_length=1, max_length=255)]
@@ -29,6 +35,34 @@ class UserCreate(BaseModel):
     def gender_must_be_m_or_f(cls, v):
         if v not in ("m", "f"):
             raise ValueError("Gender must be 'm' or 'f'")
+        return v
+
+    @field_validator("bio")
+    @classmethod
+    def bio_length(cls, v):
+        if v is not None and len(v) > 5000:
+            raise ValueError("Bio must not exceed 5000 characters")
+        return v
+
+    @field_validator("username")
+    @classmethod
+    def username_not_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Username cannot be empty")
+        return v
+
+    @field_validator("country")
+    @classmethod
+    def country_not_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Country cannot be empty")
+        return v
+
+    @field_validator("city")
+    @classmethod
+    def city_not_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError("City cannot be empty")
         return v
 
 

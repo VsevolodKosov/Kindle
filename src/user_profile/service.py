@@ -67,7 +67,7 @@ async def delete_user(id: UUID, db_session: AsyncSession) -> Optional[UserRead]:
 
 async def create_photo(
     data: UserPhotoCreate, db_session: AsyncSession
- ) -> UserPhotoRead:
+) -> UserPhotoRead:
     async with db_session.begin():
         photo_dao = UserPhotoDAO(db_session)
         new_photo = await photo_dao.create_photo(

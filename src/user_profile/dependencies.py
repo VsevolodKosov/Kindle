@@ -51,6 +51,19 @@ async def validate_email_unique(
         )
 
 
+async def validate_email_unique_for_update(
+    email: str,
+    user_id: UUID,
+    db_session: AsyncSession = Depends(get_db_async_session),
+) -> None:
+    existing_user = await service.get_user_by_email(email, db_session)
+    if existing_user and existing_user.id != user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="User with this email already exists"
+        )
+
+
 async def get_photo(
     photo_id: int,
     db_session: AsyncSession = Depends(get_db_async_session),

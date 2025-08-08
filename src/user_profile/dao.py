@@ -2,10 +2,12 @@ from typing import List
 from typing import Optional
 from uuid import UUID
 
+from fastapi import HTTPException
 from sqlalchemy import and_
 from sqlalchemy import delete
 from sqlalchemy import select
 from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.user_profile.models import Language
@@ -92,7 +94,16 @@ class UserSocialMediaLinkDAO:
             link=link,
         )
         self.db_session.add(new_link)
-        await self.db_session.flush()
+        try:
+            await self.db_session.flush()
+        except IntegrityError as e:
+            if (
+                "ForeignKeyViolationError" in str(e)
+                or "foreign key constraint" in str(e)
+                or "violates foreign key constraint" in str(e)
+            ):
+                raise HTTPException(status_code=422, detail="Invalid user ID")
+            raise
         return new_link
 
     async def delete_link_by_id(self, link_id: int) -> Optional[UserSocialMediaLink]:
@@ -114,8 +125,8 @@ class UserSocialMediaLinkDAO:
 
     async def get_link_id(self, id: int) -> Optional[UserSocialMediaLink]:
         db_query = select(UserSocialMediaLink).where(UserSocialMediaLink.id == id)
-        db_responce = await self.db_session.execute(db_query)
-        return db_responce.fetchone()
+        db_response = await self.db_session.execute(db_query)
+        return db_response.scalars().first()
 
     async def update_link(self, id: int, **kwargs) -> Optional[UserSocialMediaLink]:
         db_query = (
@@ -146,7 +157,16 @@ class UserPhotoDAO:
             description=description,
         )
         self.db_session.add(photo)
-        await self.db_session.flush()
+        try:
+            await self.db_session.flush()
+        except IntegrityError as e:
+            if (
+                "ForeignKeyViolationError" in str(e)
+                or "foreign key constraint" in str(e)
+                or "violates foreign key constraint" in str(e)
+            ):
+                raise HTTPException(status_code=422, detail="Invalid user ID")
+            raise
         return photo
 
     async def delete_photo_by_id(self, id: int) -> Optional[UserPhoto]:
@@ -166,8 +186,8 @@ class UserPhotoDAO:
 
     async def get_photo_by_id(self, id: int) -> Optional[UserPhoto]:
         db_query = select(UserPhoto).where(UserPhoto.id == id)
-        db_responce = await self.db_session.execute(db_query)
-        return db_responce.fetchone()
+        db_response = await self.db_session.execute(db_query)
+        return db_response.scalars().first()
 
     async def update_photo(self, id: int, **kwargs) -> Optional[UserPhoto]:
         db_query = (
@@ -209,8 +229,13 @@ class LanguageDAO:
 
     async def get_language_by_id(self, id: int) -> Optional[Language]:
         db_query = select(Language).where(Language.id == id)
-        db_responce = await self.db_session.execute(db_query)
-        return db_responce.fetchone()
+        db_response = await self.db_session.execute(db_query)
+        return db_response.scalars().first()
+
+    async def get_language_by_name(self, name: str) -> Optional[Language]:
+        db_query = select(Language).where(Language.name == name)
+        db_response = await self.db_session.execute(db_query)
+        return db_response.scalars().first()
 
     async def update_language(self, id: int, **kwargs) -> Optional[Language]:
         db_query = (
@@ -234,14 +259,15 @@ class UserLanguageDAO:
         self.db_session.add(link)
         await self.db_session.flush()
 
-    async def delete(self, user_id: UUID, language_id: int) -> None:
+    async def delete(self, user_id: UUID, language_id: int) -> bool:
         query = delete(UserLanguage).where(
             and_(
                 UserLanguage.user_id == user_id,
                 UserLanguage.language_id == language_id,
             )
         )
-        await self.db_session.execute(query)
+        result = await self.db_session.execute(query)
+        return result.rowcount > 0
 
     async def get_languages_by_user(self, user_id: UUID) -> List[UserLanguage]:
         query = select(UserLanguage).where(UserLanguage.user_id == user_id)

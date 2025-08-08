@@ -2,6 +2,7 @@ from typing import List
 
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db_async_session
@@ -9,6 +10,7 @@ from src.user_profile import service
 from src.user_profile.dependencies import get_user_languages
 from src.user_profile.dependencies import validate_email_unique
 from src.user_profile.dependencies import validate_email_unique_for_update
+from src.user_profile.dependencies import validate_language_create_payload
 from src.user_profile.dependencies import validate_language_exists
 from src.user_profile.dependencies import validate_photo_exists
 from src.user_profile.dependencies import validate_social_link_exists
@@ -30,7 +32,7 @@ from src.user_profile.schemas import UserUpdate
 
 user_profile_router = APIRouter()
 
-# ----- USERS -----
+
 
 @user_profile_router.get("/{user_id}", response_model=UserRead)
 async def read_user(
@@ -44,14 +46,10 @@ async def create_user(
     data: UserCreate,
     db_session: AsyncSession = Depends(get_db_async_session),
 ):
-    # Валидация email через dependency
+
     await validate_email_unique(data.email, db_session)
-    try:
-        new_user = await service.create_user(data, db_session)
-        return new_user
-    except Exception:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=422, detail="Validation error")
+    new_user = await service.create_user(data, db_session)
+    return new_user
 
 
 @user_profile_router.patch("/", response_model=UserRead)
@@ -60,7 +58,7 @@ async def update_user(
     user: UserRead = Depends(validate_user_exists),
     db_session: AsyncSession = Depends(get_db_async_session),
 ):
-    # Валидация email если он обновляется
+
     if user_update.email:
         await validate_email_unique_for_update(user_update.email, user.id, db_session)
 
@@ -81,7 +79,7 @@ async def delete_user(
     return deleted_user
 
 
-# ----- PHOTOS -----
+
 
 @user_profile_router.get("/photos/{photo_id}", response_model=UserPhotoRead)
 async def read_photo(
@@ -107,7 +105,7 @@ async def update_photo(
 ):
     updated_photo = await service.update_photo(
         photo.id,
-        photo_update.dict(exclude_unset=True),
+        photo_update.model_dump(exclude_unset=True),
         db_session,
     )
     return updated_photo
@@ -122,7 +120,7 @@ async def delete_photo(
     return deleted_photo
 
 
-# ----- SOCIAL LINKS -----
+
 
 @user_profile_router.get(
     "/social-links/{link_id}", response_model=UserSocialMediaLinkRead
@@ -152,7 +150,7 @@ async def update_social_link(
 ):
     updated_link = await service.update_social_link(
         link.id,
-        link_update.dict(exclude_unset=True),
+        link_update.model_dump(exclude_unset=True),
         db_session,
     )
     return updated_link
@@ -169,7 +167,23 @@ async def delete_social_link(
     return deleted_link
 
 
-# ----- LANGUAGES -----
+
+
+@user_profile_router.get("/languages/", response_model=List[LanguageRead])
+async def list_languages(db_session: AsyncSession = Depends(get_db_async_session)):
+    return await service.get_all_languages(db_session)
+
+
+
+@user_profile_router.patch("/languages/")
+async def update_language_missing_id():
+    raise HTTPException(status_code=422, detail="Invalid language id")
+
+
+@user_profile_router.delete("/languages/")
+async def delete_language_missing_id():
+    raise HTTPException(status_code=422, detail="Invalid language id")
+
 
 @user_profile_router.get("/languages/{language_id}", response_model=LanguageRead)
 async def read_language(
@@ -178,10 +192,11 @@ async def read_language(
     return language
 
 
-@user_profile_router.post("/languages", response_model=LanguageRead)
+@user_profile_router.post("/languages/", response_model=LanguageRead)
 async def create_language(
     data: LanguageCreate,
     db_session: AsyncSession = Depends(get_db_async_session),
+    _: None = Depends(validate_language_create_payload),
 ):
     new_language = await service.create_language(data, db_session)
     return new_language
@@ -193,9 +208,13 @@ async def update_language(
     language: LanguageRead = Depends(validate_language_exists),
     db_session: AsyncSession = Depends(get_db_async_session),
 ):
+    update_data = language_update.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=422, detail="No data provided for update")
+
     updated_language = await service.update_language(
         language.id,
-        language_update.dict(exclude_unset=True),
+        update_data,
         db_session,
     )
     return updated_language
@@ -210,7 +229,7 @@ async def delete_language(
     return deleted_language
 
 
-# ----- USER LANGUAGES -----
+
 
 @user_profile_router.get(
     "/{user_id}/languages", response_model=List[UserLanguageRead]

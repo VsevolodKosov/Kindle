@@ -84,7 +84,7 @@ async def test_get_user_success(client, create_user, data_user):
     response = await client.get(f"/users/{user_id}")
     assert response.status_code == 200
     data = response.json()
-    # Сравниваем UUID корректно
+
     assert str(data["id"]) == str(user_id)
     for key in data_user:
         assert data[key] == data_user[key]

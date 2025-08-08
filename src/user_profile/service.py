@@ -1,0 +1,390 @@
+from typing import List
+from typing import Optional
+from uuid import UUID
+
+from fastapi import HTTPException
+from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.user_profile.dao import LanguageDAO
+from src.user_profile.dao import UserDAO
+from src.user_profile.dao import UserLanguageDAO
+from src.user_profile.dao import UserPhotoDAO
+from src.user_profile.dao import UserSocialMediaLinkDAO
+from src.user_profile.schemas import LanguageCreate
+from src.user_profile.schemas import LanguageRead
+from src.user_profile.schemas import UserCreate
+from src.user_profile.schemas import UserLanguageCreate
+from src.user_profile.schemas import UserLanguageRead
+from src.user_profile.schemas import UserPhotoCreate
+from src.user_profile.schemas import UserPhotoRead
+from src.user_profile.schemas import UserRead
+from src.user_profile.schemas import UserSocialMediaLinkCreate
+from src.user_profile.schemas import UserSocialMediaLinkRead
+
+
+async def create_user(data: UserCreate, db_session: AsyncSession) -> UserRead:
+    async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        try:
+            new_user = await user_dao.create_new_user(
+                username=data.username,
+                email=data.email,
+                bio=data.bio,
+                gender=data.gender,
+                country=data.country,
+                city=data.city,
+            )
+        except IntegrityError:
+            raise HTTPException(
+                status_code=400,
+                detail="User with this email already exists"
+            )
+        except DBAPIError as e:
+            if "StringDataRightTruncationError" in str(e):
+                raise HTTPException(status_code=422, detail="Invalid data provided")
+            raise
+        except IntegrityError as e:
+            if (
+                "ForeignKeyViolationError" in str(e)
+                or "foreign key constraint" in str(e)
+                or "violates foreign key constraint" in str(e)
+            ):
+                raise HTTPException(status_code=422, detail="Invalid data provided")
+            raise
+    return UserRead.from_orm_obj(new_user)
+
+
+async def get_user(id: UUID, db_session: AsyncSession) -> Optional[UserRead]:
+    async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        user = await user_dao.get_user_by_id(id=id)
+    return UserRead.from_orm_obj(user) if user else None
+
+
+async def get_user_by_email(email: str, db_session: AsyncSession) -> Optional[UserRead]:
+    async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        user = await user_dao.get_user_by_email(email=email)
+    return UserRead.from_orm_obj(user) if user else None
+
+
+async def update_user(
+    updated_user_params: dict, id: UUID, db_session: AsyncSession
+) -> Optional[UserRead]:
+    async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        updated_user = await user_dao.update_user(id=id, **updated_user_params)
+    return UserRead.from_orm_obj(updated_user) if updated_user else None
+
+
+async def delete_user(id: UUID, db_session: AsyncSession) -> Optional[UserRead]:
+    async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        deleted_user = await user_dao.delete_user(id=id)
+    return UserRead.from_orm_obj(deleted_user) if deleted_user else None
+
+
+async def create_photo(
+    data: UserPhotoCreate, db_session: AsyncSession
+) -> UserPhotoRead:
+    photo_dao = UserPhotoDAO(db_session)
+    try:
+        async with db_session.begin():
+            new_photo = await photo_dao.create_photo(
+                user_id=data.user_id,
+                url=data.url,
+                description=data.description,
+            )
+    except DBAPIError as e:
+        if "StringDataRightTruncationError" in str(e):
+            raise HTTPException(status_code=422, detail="Invalid data provided")
+        raise
+    except IntegrityError as e:
+        if (
+            "ForeignKeyViolationError" in str(e)
+            or "foreign key constraint" in str(e)
+            or "violates foreign key constraint" in str(e)
+        ):
+            raise HTTPException(status_code=422, detail="Invalid user ID")
+        raise
+    except Exception as e:
+        if (
+            "ForeignKeyViolationError" in str(e)
+            or "foreign key constraint" in str(e)
+            or "violates foreign key constraint" in str(e)
+        ):
+            raise HTTPException(status_code=422, detail="Invalid user ID")
+        raise
+    return UserPhotoRead.from_orm_obj(new_photo)
+
+
+async def get_photos_by_user(
+    user_id: UUID, db_session: AsyncSession
+) -> List[UserPhotoRead]:
+    async with db_session.begin():
+        photo_dao = UserPhotoDAO(db_session)
+        photos = await photo_dao.get_photos_by_user(user_id=user_id)
+    return [UserPhotoRead.from_orm_obj(photo) for photo in photos]
+
+async def get_photo_by_id(
+    photo_id: int, db_session: AsyncSession
+) -> Optional[UserPhotoRead]:
+    async with db_session.begin():
+        photo_dao = UserPhotoDAO(db_session)
+        photo = await photo_dao.get_photo_by_id(photo_id)
+        return UserPhotoRead.from_orm_obj(photo) if photo else None
+
+
+async def update_photo(
+    photo_id: int, update_data: dict, db_session: AsyncSession
+) -> Optional[UserPhotoRead]:
+    async with db_session.begin():
+        photo_dao = UserPhotoDAO(db_session)
+        try:
+            updated_photo = await photo_dao.update_photo(photo_id, **update_data)
+        except DBAPIError as e:
+            if "StringDataRightTruncationError" in str(e):
+                raise HTTPException(status_code=422, detail="Invalid data provided")
+            raise
+        except IntegrityError as e:
+            if (
+                "ForeignKeyViolationError" in str(e)
+                or "foreign key constraint" in str(e)
+                or "violates foreign key constraint" in str(e)
+            ):
+                raise HTTPException(status_code=422, detail="Invalid data provided")
+            raise
+    return UserPhotoRead.from_orm_obj(updated_photo) if updated_photo else None
+
+
+async def delete_photo(
+    photo_id: int, db_session: AsyncSession
+) -> Optional[UserPhotoRead]:
+    async with db_session.begin():
+        photo_dao = UserPhotoDAO(db_session)
+        deleted_photo = await photo_dao.delete_photo_by_id(photo_id)
+    return UserPhotoRead.from_orm_obj(deleted_photo) if deleted_photo else None
+
+
+async def create_social_link(
+    data: UserSocialMediaLinkCreate, db_session: AsyncSession
+) -> UserSocialMediaLinkRead:
+    link_dao = UserSocialMediaLinkDAO(db_session)
+    try:
+        async with db_session.begin():
+            new_link = await link_dao.create_link(
+                user_id=data.user_id,
+                title=data.title,
+                link=data.link,
+            )
+    except DBAPIError as e:
+        if "StringDataRightTruncationError" in str(e):
+            raise HTTPException(status_code=422, detail="Invalid data provided")
+        raise
+    except IntegrityError as e:
+        if (
+            "ForeignKeyViolationError" in str(e)
+            or "foreign key constraint" in str(e)
+            or "violates foreign key constraint" in str(e)
+        ):
+            raise HTTPException(status_code=422, detail="Invalid user ID")
+        raise
+    except Exception as e:
+        if (
+            "ForeignKeyViolationError" in str(e)
+            or "foreign key constraint" in str(e)
+            or "violates foreign key constraint" in str(e)
+        ):
+            raise HTTPException(status_code=422, detail="Invalid user ID")
+        raise
+    return UserSocialMediaLinkRead.from_orm_obj(new_link)
+
+
+async def get_links_by_user(
+    user_id: UUID, db_session: AsyncSession
+) -> List[UserSocialMediaLinkRead]:
+    async with db_session.begin():
+        link_dao = UserSocialMediaLinkDAO(db_session)
+        links = await link_dao.get_links_by_user(user_id)
+    return [UserSocialMediaLinkRead.from_orm_obj(link) for link in links]
+
+async def get_link_by_id(
+    link_id: int, db_session: AsyncSession
+) -> Optional[UserSocialMediaLinkRead]:
+    async with db_session.begin():
+        link_dao = UserSocialMediaLinkDAO(db_session)
+        link = await link_dao.get_link_id(id=link_id)
+        return UserSocialMediaLinkRead.from_orm_obj(link) if link else None
+
+
+async def update_social_link(
+    link_id: int, update_data: dict, db_session: AsyncSession
+) -> Optional[UserSocialMediaLinkRead]:
+    async with db_session.begin():
+        link_dao = UserSocialMediaLinkDAO(db_session)
+        try:
+            updated_link = await link_dao.update_link(link_id, **update_data)
+        except DBAPIError as e:
+            if "StringDataRightTruncationError" in str(e):
+                raise HTTPException(status_code=422, detail="Invalid data provided")
+            raise
+        except IntegrityError as e:
+            if (
+                "ForeignKeyViolationError" in str(e)
+                or "foreign key constraint" in str(e)
+                or "violates foreign key constraint" in str(e)
+            ):
+                raise HTTPException(status_code=422, detail="Invalid data provided")
+            raise
+    return UserSocialMediaLinkRead.from_orm_obj(updated_link) if updated_link else None
+
+
+async def delete_social_link(
+    link_id: int, db_session: AsyncSession
+) -> Optional[UserSocialMediaLinkRead]:
+    async with db_session.begin():
+        link_dao = UserSocialMediaLinkDAO(db_session)
+        deleted_link = await link_dao.delete_link_by_id(link_id)
+    return UserSocialMediaLinkRead.from_orm_obj(deleted_link) if deleted_link else None
+
+
+async def create_language(
+    data: LanguageCreate, db_session: AsyncSession
+) -> LanguageRead:
+    async with db_session.begin():
+        language_dao = LanguageDAO(db_session)
+        try:
+            new_language = await language_dao.create_language(name=data.name)
+        except IntegrityError:
+            raise HTTPException(
+                status_code=400,
+                detail="Language with this name already exists"
+            )
+    return LanguageRead.from_orm_obj(new_language)
+
+
+async def get_all_languages(db_session: AsyncSession) -> List[LanguageRead]:
+    async with db_session.begin():
+        language_dao = LanguageDAO(db_session)
+        languages = await language_dao.get_all_languages()
+    return [LanguageRead.from_orm_obj(lang) for lang in languages]
+
+async def get_language_by_id(
+    language_id: int, db_session: AsyncSession
+) -> Optional[LanguageRead]:
+    async with db_session.begin():
+        language_dao = LanguageDAO(db_session)
+        language = await language_dao.get_language_by_id(id=language_id)
+        return LanguageRead.from_orm_obj(language) if language else None
+
+
+async def get_language_by_name(
+    name: str, db_session: AsyncSession
+) -> Optional[LanguageRead]:
+    async with db_session.begin():
+        language_dao = LanguageDAO(db_session)
+        language = await language_dao.get_language_by_name(name)
+        return LanguageRead.from_orm_obj(language) if language else None
+
+
+async def update_language(
+    language_id: int, update_data: dict, db_session: AsyncSession
+) -> Optional[LanguageRead]:
+
+    if "name" in update_data:
+        name = update_data["name"]
+        if name is None or not str(name).strip():
+            raise HTTPException(status_code=422, detail="Language name cannot be empty")
+        if len(str(name)) > 50:
+            raise HTTPException(status_code=422, detail="Language name is too long")
+
+    async with db_session.begin():
+        language_dao = LanguageDAO(db_session)
+
+
+        if "name" in update_data:
+            existing_language = await language_dao.get_language_by_name(
+            update_data["name"]
+        )
+            if existing_language and existing_language.id != language_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Language with this name already exists"
+                )
+
+        try:
+            updated_language = await language_dao.update_language(
+            language_id, **update_data
+        )
+        except IntegrityError:
+            raise HTTPException(
+                status_code=400,
+                detail="Language with this name already exists"
+            )
+        except DBAPIError as e:
+            if "StringDataRightTruncationError" in str(e):
+                raise HTTPException(status_code=422, detail="Invalid data provided")
+            raise
+
+        if updated_language:
+            return LanguageRead.from_orm_obj(updated_language)
+        return None
+
+
+async def delete_language(
+    language_id: int, db_session: AsyncSession
+) -> Optional[LanguageRead]:
+    async with db_session.begin():
+        language_dao = LanguageDAO(db_session)
+        deleted_lang = await language_dao.delete_language_by_id(language_id)
+    return LanguageRead.from_orm_obj(deleted_lang) if deleted_lang else None
+
+
+async def add_language_to_user(
+    data: UserLanguageCreate, db_session: AsyncSession
+) -> UserLanguageRead:
+    async with db_session.begin():
+        user_lang_dao = UserLanguageDAO(db_session)
+        try:
+            await user_lang_dao.create(
+            user_id=data.user_id, language_id=data.language_id
+        )
+        except IntegrityError as e:
+            if "UniqueViolationError" in str(e) or "duplicate key value" in str(e):
+                raise HTTPException(
+                    status_code=400,
+                    detail="User already has this language"
+                )
+            elif (
+                "ForeignKeyViolationError" in str(e)
+                or "foreign key constraint" in str(e)
+            ):
+                raise HTTPException(
+                    status_code=422, detail="Invalid user or language ID"
+                )
+            raise
+        return UserLanguageRead(user_id=data.user_id, language_id=data.language_id)
+
+
+async def get_languages_by_user(
+    user_id: UUID, db_session: AsyncSession
+) -> List[UserLanguageRead]:
+    async with db_session.begin():
+        user_lang_dao = UserLanguageDAO(db_session)
+        user_langs = await user_lang_dao.get_languages_by_user(user_id)
+    return [
+        UserLanguageRead(user_id=ul.user_id, language_id=ul.language_id)
+        for ul in user_langs
+    ]
+
+
+async def remove_language_from_user(
+    user_id: UUID, language_id: int, db_session: AsyncSession
+) -> None:
+    async with db_session.begin():
+        user_lang_dao = UserLanguageDAO(db_session)
+        deleted = await user_lang_dao.delete(user_id=user_id, language_id=language_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="User language not found")

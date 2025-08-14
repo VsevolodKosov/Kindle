@@ -6,11 +6,14 @@ from dotenv import load_dotenv
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
+from src.models import Base
+from src.user_profile.models import User  # noqa: F401
+from src.user_profile.models import UserPhoto  # noqa: F401
+from src.user_profile.models import UserSocialMediaLinks  # noqa: F401
+
 environment = os.getenv("APP_ENV", "prod")
 env_file = f".env.db_{environment}"
-env_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "env", env_file)
-)
+env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "env", env_file))
 
 load_dotenv(dotenv_path=env_path)
 SQLALCHEMY_URL = (
@@ -24,9 +27,8 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 config.set_main_option("sqlalchemy.url", SQLALCHEMY_URL)
 
-# from myapp import mymode
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
+
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

@@ -1,0 +1,25 @@
+[project]
+name = "kindle"
+version = "0.1.0"
+description = "kindle"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "asyncpg>=0.30.0",
+    "dotenv>=0.9.9",
+    "fastapi>=0.116.1",
+    "sqlalchemy>=2.0.43",
+    "uvicorn>=0.35.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.8",
+    "alembic>=1.16.4",
+    "pre-commit>=4.3.0",
+]
+
+test = [
+    "httpx>=0.28.1",
+    "pytest>=8.4.1",
+]

@@ -28,7 +28,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     surname: Mapped[str] = mapped_column(String(50), nullable=False)
     date_of_birth: Mapped[date] = mapped_column(Date, nullable=False)
-    bio: Mapped[str] = mapped_column(Text)
+    bio: Mapped[str] = mapped_column(Text, nullable=True)
     gender: Mapped[str] = mapped_column(CHAR(1), nullable=False)
     country: Mapped[str] = mapped_column(String(50), nullable=False)
     city: Mapped[str] = mapped_column(String(50), nullable=False)

@@ -24,7 +24,7 @@ class UserDAO:
         name: str,
         surname: str,
         date_of_birth: date,
-        bio: str,
+        bio: Optional[str],
         gender: str,
         country: str,
         city: str,

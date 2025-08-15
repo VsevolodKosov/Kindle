@@ -70,7 +70,7 @@ async def test_update_user_duplicate_email(client, data_user):
             None,
         ),
 
-        ({"bio": None}, 404, None),
+        ({"bio": None}, 200, None),
 
         # Обновление bio с пустой строки на значение
         ({"bio": "Восстановленная биография"}, 200, None),

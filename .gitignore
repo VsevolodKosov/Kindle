@@ -18,3 +18,6 @@ env
 
 #vscode
 .vscode
+
+#pytest
+.pytest_cache

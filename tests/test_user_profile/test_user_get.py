@@ -2,6 +2,7 @@ from uuid import uuid4
 
 import pytest
 
+
 @pytest.mark.asyncio
 async def test_get_user(client, data_user):
     response_post = await client.post("/users/", json=data_user)
@@ -14,6 +15,7 @@ async def test_get_user(client, data_user):
     assert "user_id" in body_get
     body_get.pop("user_id")
     assert body_get == data_user
+
 
 @pytest.mark.asyncio
 async def test__get_doesnt_exist_user(client):

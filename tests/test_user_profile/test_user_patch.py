@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.mark.asyncio
 async def test_update_user_duplicate_email(client, data_user):
 
@@ -48,7 +49,6 @@ async def test_update_user_duplicate_email(client, data_user):
         ({"gender": "f"}, 200, None),
         ({"country": "Russia"}, 200, None),
         ({"city": "Moscow"}, 200, None),
-
         # Обновление нескольких полей одновременно
         (
             {
@@ -69,12 +69,9 @@ async def test_update_user_duplicate_email(client, data_user):
             200,
             None,
         ),
-
         ({"bio": None}, 200, None),
-
         # Обновление bio с пустой строки на значение
         ({"bio": "Восстановленная биография"}, 200, None),
-
         # Валидационные ошибки  email
         ({"email": "invalid-email"}, 422, "value is not a valid email address"),
         (
@@ -83,22 +80,18 @@ async def test_update_user_duplicate_email(client, data_user):
             "value is not a valid email address",
         ),
         ({"email": ""}, 422, "value is not a valid email address"),
-
         # Валидационные ошибки name
         ({"name": ""}, 422, "String should have at least 1 character"),
         ({"name": "   "}, 422, "String should have at least 1 character"),
         ({"name": "a" * 51}, 422, "String should have at most 50 characters"),
         ({"name": None}, 404, None),
-
         # Валидационные ошибки  surname
         ({"surname": ""}, 422, "String should have at least 1 character"),
         ({"surname": "a" * 51}, 422, "String should have at most 50 characters"),
         ({"surname": None}, 404, None),
-
         ({"date_of_birth": "invalid-date"}, 422, "Input should be a valid date"),
         ({"date_of_birth": None}, 404, None),
         ({"date_of_birth": 123}, 422, "zero time"),
-
         # Валидационные ошибки  gender
         ({"gender": "x"}, 422, "Gender must be 'm' or 'f'"),
         ({"gender": "mm"}, 422, "String should have at most 1 character"),
@@ -106,18 +99,14 @@ async def test_update_user_duplicate_email(client, data_user):
         ({"gender": "male"}, 422, "String should have at most 1 character"),
         ({"gender": ""}, 422, "String should have at least 1 character"),
         ({"gender": None}, 404, None),
-
         # Валидационные ошибки country
         ({"country": ""}, 422, "String should have at least 1 character"),
         ({"country": "a" * 51}, 422, "String should have at most 50 characters"),
         ({"country": None}, 404, None),
-
         # Валидационные ошибки city
         ({"city": ""}, 422, "String should have at least 1 character"),
         ({"city": "a" * 51}, 422, "String should have at most 50 characters"),
         ({"city": None}, 404, None),
-
-
         # Неправильные типы данных
         ({"email": 123}, 422, "Input should be a valid string"),
         ({"name": 123}, 422, "Input should be a valid string"),
@@ -125,10 +114,8 @@ async def test_update_user_duplicate_email(client, data_user):
         ({"gender": 123}, 422, "Input should be a valid string"),
         ({"country": ["Russia"]}, 422, "Input should be a valid string"),
         ({"city": {"city": "Moscow"}}, 422, "Input should be a valid string"),
-
         # Пустой payload
         ({}, 400, "No data provided for update"),
-
         # Граничные значения
         ({"name": "a" * 50}, 200, None),
         ({"bio": "a" * 5000}, 200, None),

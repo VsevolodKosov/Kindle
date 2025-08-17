@@ -46,8 +46,7 @@ async def test_update_photo_success(client, data_user, data_user_photo):
     assert resp_get.status_code == 200
     got_list = resp_get.json()
     assert any(
-        p["id"] == photo_id and p["url"] == update_payload["url"]
-        for p in got_list
+        p["id"] == photo_id and p["url"] == update_payload["url"] for p in got_list
     )
 
 
@@ -65,8 +64,7 @@ async def test_update_photo_validation_errors(client, data_user, data_user_photo
 
     # Пустая строка
     resp_update_empty = await client.patch(
-        f"/users/{user_id}/photos/{photo_id}",
-        json={"id": photo_id, "url": ""}
+        f"/users/{user_id}/photos/{photo_id}", json={"id": photo_id, "url": ""}
     )
     assert resp_update_empty.status_code == 422
     detail = resp_update_empty.json()["detail"]
@@ -76,8 +74,7 @@ async def test_update_photo_validation_errors(client, data_user, data_user_photo
     # Слишком длинная строка (>255)
     too_long = "a" * 256
     resp_update_long = await client.patch(
-        f"/users/{user_id}/photos/{photo_id}",
-        json={"id": photo_id, "url": too_long}
+        f"/users/{user_id}/photos/{photo_id}", json={"id": photo_id, "url": too_long}
     )
     assert resp_update_long.status_code == 422
     detail = resp_update_long.json()["detail"]
@@ -113,7 +110,7 @@ async def test_update_delete_nonexistent_photo_404(client, data_user):
 
     resp_update = await client.patch(
         f"/users/{user_id}/photos/999999",
-        json={"id": 999999, "url": "https://example.com/1.jpg"}
+        json={"id": 999999, "url": "https://example.com/1.jpg"},
     )
     assert resp_update.status_code == 404
 

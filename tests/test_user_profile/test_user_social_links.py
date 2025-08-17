@@ -35,11 +35,7 @@ async def test_update_link_success(client, data_user, data_user_social_link):
     assert resp_create.status_code == 201
     link_id = resp_create.json()["id"]
 
-    update_payload = {
-        "id": link_id,
-        "name": "NewName",
-        "link": "https://example.com/me"
-    }
+    update_payload = {"id": link_id, "name": "NewName", "link": "https://example.com/me"}
     resp_update = await client.patch(
         f"/users/{user_id}/social-links/{link_id}", json=update_payload
     )
@@ -64,7 +60,7 @@ async def test_update_link_validation_errors(client, data_user, data_user_social
     # Пустые строки
     resp_update_empty = await client.patch(
         f"/users/{user_id}/social-links/{link_id}",
-        json={"id": link_id, "name": "", "link": ""}
+        json={"id": link_id, "name": "", "link": ""},
     )
     assert resp_update_empty.status_code == 422
     detail = resp_update_empty.json()["detail"]
@@ -74,8 +70,7 @@ async def test_update_link_validation_errors(client, data_user, data_user_social
 
     # Длинные значения
     resp_update_long = await client.patch(
-        f"/users/{user_id}/social-links/{link_id}",
-        json={"id": link_id, "name": "a" * 51}
+        f"/users/{user_id}/social-links/{link_id}", json={"id": link_id, "name": "a" * 51}
     )
     assert resp_update_long.status_code == 422
     detail = resp_update_long.json()["detail"]
@@ -90,8 +85,7 @@ async def test_update_delete_nonexistent_link_404(client, data_user):
     user_id = resp_post_user.json()["user_id"]
 
     resp_update = await client.patch(
-        f"/users/{user_id}/social-links/999999",
-        json={"id": 999999, "name": "N"}
+        f"/users/{user_id}/social-links/999999", json={"id": 999999, "name": "N"}
     )
     assert resp_update.status_code == 404
 

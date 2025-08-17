@@ -2,16 +2,8 @@ import uuid
 from datetime import date
 from typing import List
 
-from sqlalchemy import CHAR
-from sqlalchemy import Date
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import String
-from sqlalchemy import Text
-from sqlalchemy import UUID
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import relationship
+from sqlalchemy import CHAR, UUID, Date, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models import Base
 
@@ -25,6 +17,7 @@ class User(Base):
         default=uuid.uuid4,
     )
     email: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    hash_password: Mapped[str] = mapped_column(String(60), nullable=False)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     surname: Mapped[str] = mapped_column(String(50), nullable=False)
     date_of_birth: Mapped[date] = mapped_column(Date, nullable=False)
@@ -32,6 +25,7 @@ class User(Base):
     gender: Mapped[str] = mapped_column(CHAR(1), nullable=False)
     country: Mapped[str] = mapped_column(String(50), nullable=False)
     city: Mapped[str] = mapped_column(String(50), nullable=False)
+    role: Mapped[str] = mapped_column(String(10), default="user", nullable=False)
 
     photos: Mapped[List["UserPhoto"]] = relationship(
         back_populates="user",
@@ -41,6 +35,21 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    refresh_tokens = relationship(
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == "admin"
+
+    @property
+    def is_moderator(self) -> bool:
+        return self.role == "moderator"
+
+    @property
+    def is_user(self) -> bool:
+        return self.role == "user"
 
 
 class UserPhoto(Base):

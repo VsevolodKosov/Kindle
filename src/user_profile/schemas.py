@@ -1,12 +1,8 @@
 from datetime import date
-from typing import Annotated
-from typing import Optional
+from typing import Annotated, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
-from pydantic import EmailStr
-from pydantic import field_validator
-from pydantic import StringConstraints
+from pydantic import BaseModel, EmailStr, StringConstraints, field_validator
 
 NameStr = Annotated[
     str, StringConstraints(min_length=1, max_length=50, strip_whitespace=True)
@@ -27,6 +23,7 @@ LinkStr = Annotated[
 UrlStr = Annotated[
     str, StringConstraints(min_length=1, max_length=255, strip_whitespace=True)
 ]
+PasswordStr = Annotated[str, StringConstraints(min_length=8)]
 
 
 class UserCreate(BaseModel):
@@ -104,6 +101,7 @@ class UserRead(BaseModel):
     gender: GenderStr
     country: CountryCityStr
     city: CountryCityStr
+    role: str
 
     @property
     def age(self) -> int:
@@ -129,11 +127,13 @@ class UserRead(BaseModel):
             gender=user.gender,
             country=user.country,
             city=user.city,
+            role=user.role,
         )
 
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
+    password: Optional[PasswordStr] = None
     name: Optional[NameStr] = None
     surname: Optional[NameStr] = None
     date_of_birth: Optional[date] = None

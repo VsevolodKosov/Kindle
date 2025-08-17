@@ -7,12 +7,12 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.12.8
+    rev: v0.12.9
     hooks:
       - id: ruff
         args: [--fix]
 
-  - repo: https://github.com/asottile/reorder_python_imports
-    rev: v3.15.0
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
     hooks:
-      - id: reorder-python-imports
+      - id: black

@@ -1,17 +1,12 @@
 from datetime import date
-from typing import List
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import delete
-from sqlalchemy import select
-from sqlalchemy import update
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.user_profile.models import User
-from src.user_profile.models import UserPhoto
-from src.user_profile.models import UserSocialMediaLinks
+from src.user_profile.models import User, UserPhoto, UserSocialMediaLinks
 
 
 class UserDAO:
@@ -21,6 +16,7 @@ class UserDAO:
     async def create_user(
         self,
         email: str,
+        hash_password: str,
         name: str,
         surname: str,
         date_of_birth: date,
@@ -32,6 +28,7 @@ class UserDAO:
         try:
             new_user = User(
                 email=email,
+                hash_password=hash_password,
                 name=name,
                 surname=surname,
                 date_of_birth=date_of_birth,
@@ -53,6 +50,11 @@ class UserDAO:
         db_response = await self.db_session.execute(db_query)
         return db_response.scalar_one_or_none()
 
+    async def get_user_by_email(self, email: str) -> Optional[User]:
+        db_query = select(User).where(User.email == email)
+        db_response = await self.db_session.execute(db_query)
+        return db_response.scalar_one_or_none()
+
     async def update_user(self, id: UUID, **kwargs) -> Optional[User]:
         try:
             db_query = update(User).where(User.id == id).values(**kwargs).returning(User)
@@ -65,6 +67,23 @@ class UserDAO:
 
     async def delete_user_by_id(self, id: UUID) -> Optional[User]:
         db_query = delete(User).where(User.id == id).returning(User)
+        db_response = await self.db_session.execute(db_query)
+        return db_response.scalar_one_or_none()
+
+    async def get_all_users(self) -> List[User]:
+        db_query = select(User)
+        db_response = await self.db_session.execute(db_query)
+        return db_response.scalars().all()
+
+    async def get_users_by_role(self, role: str) -> List[User]:
+        db_query = select(User).where(User.role == role)
+        db_response = await self.db_session.execute(db_query)
+        return db_response.scalars().all()
+
+    async def update_user_role(self, user_id: UUID, new_role: str) -> Optional[User]:
+        db_query = (
+            update(User).where(User.id == user_id).values(role=new_role).returning(User)
+        )
         db_response = await self.db_session.execute(db_query)
         return db_response.scalar_one_or_none()
 

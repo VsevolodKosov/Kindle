@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.mark.asyncio
 async def test_create_user(client, data_user):
     response = await client.post("/users/", json=data_user)
@@ -8,6 +9,7 @@ async def test_create_user(client, data_user):
     assert "user_id" in body
     body.pop("user_id")
     assert body == data_user
+
 
 @pytest.mark.asyncio
 async def test_create_user_duplicate_email(client, data_user):
@@ -20,12 +22,12 @@ async def test_create_user_duplicate_email(client, data_user):
     assert response_second.status_code == 400
     assert "already exists" in response_second.json()["detail"]
 
+
 @pytest.mark.parametrize(
     "payload,expected_status",
     [
         # Пустой payload
         ({}, 422),
-
         # Отсутствует обязательное поле email
         (
             {

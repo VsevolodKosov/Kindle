@@ -1,21 +1,19 @@
 import asyncio
 import uuid
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator, Dict
 
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.database import get_async_db_session
 from src.main import app
 from tests.config import TEST_DATABASE_URL
 
-CLEAN_TABLES = ["users", "user_photo", "user_social_media_links"]
+CLEAN_TABLES = ["users", "user_photo", "user_social_media_links", "refresh_tokens"]
 
 
 @pytest.fixture(scope="function")
@@ -41,9 +39,7 @@ async def test_db_async_session():
 async def clean_test_db_tables(test_db_async_session: AsyncSession):
     async with test_db_async_session.begin():
         for table in CLEAN_TABLES:
-            await test_db_async_session.execute(
-                text(f"TRUNCATE TABLE {table} CASCADE;")
-            )
+            await test_db_async_session.execute(text(f"TRUNCATE TABLE {table} CASCADE;"))
 
 
 async def get_test_db_async_session() -> AsyncGenerator[AsyncSession, None]:
@@ -64,14 +60,13 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides[get_async_db_session] = get_test_db_async_session
     transport = ASGITransport(app=app)
     async with AsyncClient(
-        transport=transport,
-        base_url="http://testserver"
+        transport=transport, base_url="http://testserver"
     ) as async_client:
         yield async_client
 
 
 @pytest.fixture
-def data_user():
+def data_user() -> Dict[str, Any]:
     unique_id = str(uuid.uuid4())[:8]
     return {
         "email": f"Ivan_{unique_id}@mail.com",
@@ -86,10 +81,10 @@ def data_user():
 
 
 @pytest.fixture
-def data_user_photo():
+def data_user_photo() -> Dict[str, str]:
     return {"url": "https://example.com/photo.jpg"}
 
 
 @pytest.fixture
-def data_user_social_link():
+def data_user_social_link() -> Dict[str, str]:
     return {"link": "https://t.me/example", "name": "Telegram"}

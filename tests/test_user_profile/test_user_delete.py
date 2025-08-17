@@ -2,6 +2,7 @@ from uuid import uuid4
 
 import pytest
 
+
 @pytest.mark.asyncio
 async def test_delete_user(client, data_user):
     response_post = await client.post("/users/", json=data_user)
@@ -13,6 +14,7 @@ async def test_delete_user(client, data_user):
 
     response_get = await client.get(f"/users/{user_id}")
     assert response_get.status_code == 404
+
 
 @pytest.mark.asyncio
 async def test_delete_doesnt_exist_user(client):

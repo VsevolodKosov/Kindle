@@ -13,9 +13,68 @@ from src.auth.schemas import (
     TokenResponse,
     TokenRevokeRequest,
 )
-from src.auth.utils import create_access_token, get_password_hash, verify_password
+from src.auth.utils import (
+    check_role_management_permission,
+    check_view_users_permission,
+    create_access_token,
+    get_password_hash,
+    verify_password,
+)
 from src.config import ALGORITHM, SECRET_KEY
 from src.user_profile.dao import UserDAO
+from src.user_profile.schemas import UserRead
+
+
+async def _get_all_users(
+    current_user: UserRead, db_session: AsyncSession
+) -> List[UserRead]:
+    check_view_users_permission(current_user)
+    async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        users = await user_dao.get_all_users()
+        return [UserRead.from_orm_obj(user) for user in users]
+
+
+async def _get_users_by_role(
+    role: str, current_user: UserRead, db_session: AsyncSession
+) -> List[UserRead]:
+    check_view_users_permission(current_user)
+    async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        users = await user_dao.get_users_by_role(role)
+        return [UserRead.from_orm_obj(user) for user in users]
+
+
+async def _promote_user(
+    user_id: UUID, current_user: UserRead, db_session: AsyncSession
+) -> UserRead:
+    check_role_management_permission(current_user)
+
+    if current_user.user_id == user_id:
+        raise HTTPException(status_code=400, detail="Admin cannot promote themselves")
+
+    async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        user = await user_dao.update_user_role(user_id, "moderator")
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return UserRead.from_orm_obj(user)
+
+
+async def _demote_moderator(
+    user_id: UUID, current_user: UserRead, db_session: AsyncSession
+) -> UserRead:
+    check_role_management_permission(current_user)
+
+    if current_user.user_id == user_id:
+        raise HTTPException(status_code=400, detail="Admin cannot demote themselves")
+
+    async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        user = await user_dao.update_user_role(user_id, "user")
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return UserRead.from_orm_obj(user)
 
 
 async def _create_tokens_by_user(
@@ -127,23 +186,3 @@ async def _revoke_all_refresh_tokens_by_user(
             RefreshTokenResponse(refresh_token=revoked_token.token, active=False)
             for revoked_token in revoked_tokens
         ]
-
-
-async def login_user(body: LoginRequest, db_session: AsyncSession) -> TokenResponse:
-    return await _login_user(body, db_session)
-
-
-async def register_user(body: RegisterRequest, db_session: AsyncSession) -> TokenResponse:
-    return await _create_user(body, db_session)
-
-
-async def update_access_token(
-    plain_refresh_token: str, db_session: AsyncSession
-) -> TokenResponse:
-    return await _update_access_token(plain_refresh_token, db_session)
-
-
-async def revoke_refresh_token(
-    body: TokenRevokeRequest, db_session: AsyncSession
-) -> RefreshTokenResponse:
-    return await _revoke_refresh_token(body, db_session)

@@ -16,63 +16,9 @@ from src.user_profile.schemas import (
     UserUpdate,
 )
 from src.user_profile.utils import (
-    check_role_management_permission,
     check_user_delete_permission,
     check_user_edit_permission,
-    check_view_users_permission,
 )
-
-
-async def _get_all_users(
-    current_user: UserRead, db_session: AsyncSession
-) -> List[UserRead]:
-    check_view_users_permission(current_user)
-    async with db_session.begin():
-        user_dao = UserDAO(db_session)
-        users = await user_dao.get_all_users()
-        return [UserRead.from_orm_obj(user) for user in users]
-
-
-async def _get_users_by_role(
-    role: str, current_user: UserRead, db_session: AsyncSession
-) -> List[UserRead]:
-    check_view_users_permission(current_user)
-    async with db_session.begin():
-        user_dao = UserDAO(db_session)
-        users = await user_dao.get_users_by_role(role)
-        return [UserRead.from_orm_obj(user) for user in users]
-
-
-async def _promote_user(
-    user_id: UUID, current_user: UserRead, db_session: AsyncSession
-) -> UserRead:
-    check_role_management_permission(current_user)
-
-    if current_user.user_id == user_id:
-        raise HTTPException(status_code=400, detail="Admin cannot promote themselves")
-
-    async with db_session.begin():
-        user_dao = UserDAO(db_session)
-        user = await user_dao.update_user_role(user_id, "moderator")
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
-        return UserRead.from_orm_obj(user)
-
-
-async def _demote_moderator(
-    user_id: UUID, current_user: UserRead, db_session: AsyncSession
-) -> UserRead:
-    check_role_management_permission(current_user)
-
-    if current_user.user_id == user_id:
-        raise HTTPException(status_code=400, detail="Admin cannot demote themselves")
-
-    async with db_session.begin():
-        user_dao = UserDAO(db_session)
-        user = await user_dao.update_user_role(user_id, "user")
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
-        return UserRead.from_orm_obj(user)
 
 
 async def _get_user_by_id(id: UUID, db_session: AsyncSession) -> UserRead:
@@ -154,7 +100,6 @@ async def _get_all_photos_by_user(
     user_id: UUID, db_session: AsyncSession
 ) -> List[UserPhotoRead]:
     async with db_session.begin():
-        # Сначала проверяем, существует ли пользователь
         user_dao = UserDAO(db_session)
         user = await user_dao.get_user_by_id(user_id)
         if user is None:
@@ -228,7 +173,6 @@ async def _get_all_links_by_user(
     user_id: UUID, db_session: AsyncSession
 ) -> List[UserSocialMediaLinkRead]:
     async with db_session.begin():
-        # Сначала проверяем, существует ли пользователь
         user_dao = UserDAO(db_session)
         user = await user_dao.get_user_by_id(user_id)
         if user is None:

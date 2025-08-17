@@ -27,5 +27,5 @@ COOKIE_REFRESH_TOKEN_MAX_AGE = REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 COOKIE_SECURE = False
 COOKIE_SAMESITE = "lax"
 COOKIE_HTTPONLY = True
-COOKIE_DOMAIN = None  # Домен для куки (None = текущий домен)
-COOKIE_PATH = "/"  # Путь для куки
+COOKIE_DOMAIN = None
+COOKIE_PATH = "/"

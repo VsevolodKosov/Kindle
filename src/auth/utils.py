@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from fastapi import HTTPException, status
 from jose import jwt
 from passlib.context import CryptContext
 
@@ -10,6 +11,7 @@ from src.config import (
     REFRESH_TOKEN_EXPIRE_DAYS,
     SECRET_KEY,
 )
+from src.user_profile.schemas import UserRead
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -42,3 +44,27 @@ def create_refresh_token(payload: dict, expires_delta: Optional[timedelta] = Non
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
+
+def check_promote_permission(current_user: UserRead):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can promote/demote moderators",
+        )
+
+
+def check_view_users_permission(current_user: UserRead) -> None:
+    if current_user.role not in ["moderator", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only moderators and admins can view user lists",
+        )
+
+
+def check_role_management_permission(current_user: UserRead) -> None:
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can manage user roles",
+        )

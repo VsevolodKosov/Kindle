@@ -12,9 +12,13 @@ from src.auth.schemas import (
     TokenResponse,
     TokenRevokeRequest,
 )
-from src.auth.services import (
+from src.auth.service import (
     _create_user,
+    _demote_moderator,
+    _get_all_users,
+    _get_users_by_role,
     _login_user,
+    _promote_user,
     _revoke_all_refresh_tokens_by_user,
     _revoke_refresh_token,
     _update_access_token,
@@ -28,12 +32,6 @@ from src.config import (
 )
 from src.database import get_async_db_session
 from src.user_profile.schemas import UserRead
-from src.user_profile.service import (
-    _demote_moderator,
-    _get_all_users,
-    _get_users_by_role,
-    _promote_user,
-)
 
 auth_router = APIRouter()
 admin_router = APIRouter(prefix="/admin", tags=["admin"])

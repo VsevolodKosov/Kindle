@@ -63,27 +63,3 @@ def check_user_delete_permission(
 
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unknown role")
-
-
-def check_promote_permission(current_user: UserRead):
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can promote/demote moderators",
-        )
-
-
-def check_view_users_permission(current_user: UserRead) -> None:
-    if current_user.role not in ["moderator", "admin"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only moderators and admins can view user lists",
-        )
-
-
-def check_role_management_permission(current_user: UserRead) -> None:
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can manage user roles",
-        )

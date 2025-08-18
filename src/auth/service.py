@@ -94,6 +94,9 @@ async def _login_user(body: LoginRequest, db_session: AsyncSession) -> TokenResp
         if user is None or not verify_password(body.password, user.hash_password):
             raise HTTPException(status_code=400, detail="Incorrect email or password")
 
+        refresh_dao = RefreshTokenDAO(db_session)
+        await refresh_dao.revoke_all_refresh_tokens_by_user(user.id)
+
         return await _create_tokens_by_user(user.id, user.role, db_session)
 
 
@@ -142,9 +145,16 @@ async def _update_access_token(
 
         user_id = UUID(payload.get("sub"))
 
+        user_dao = UserDAO(db_session)
+        user = await user_dao.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(status_code=401, detail="User not found")
+
         new_refresh_token = await refresh_dao.create_refresh_token_by_user(user_id)
         await refresh_dao.revoke_refresh_token(plain_refresh_token)
-        access_token = create_access_token(payload={"sub": str(user_id)})
+        access_token = create_access_token(
+            payload={"sub": str(user_id), "role": user.role}
+        )
 
         return TokenResponse(
             access_token=access_token, refresh_token=new_refresh_token.token
@@ -182,7 +192,12 @@ async def _revoke_all_refresh_tokens_by_user(
     async with db_session.begin():
         refresh_dao = RefreshTokenDAO(db_session)
         revoked_tokens = await refresh_dao.revoke_all_refresh_tokens_by_user(user_id)
-        return [
+        responses = [
             RefreshTokenResponse(refresh_token=revoked_token.token, active=False)
             for revoked_token in revoked_tokens
         ]
+
+        # cleanup: delete all revoked refresh tokens for this user
+        await refresh_dao.delete_all_revoked_refresh_tokens_by_user(user_id)
+
+        return responses

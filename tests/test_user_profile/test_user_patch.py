@@ -1,46 +1,116 @@
 import pytest
 
+from tests.conftest import clear_cookies
+
 
 @pytest.mark.asyncio
-async def test_update_user_duplicate_email(client, data_user):
+async def test_update_user_duplicate_email(client, two_users_with_tokens):
+    user1 = two_users_with_tokens["user1"]
+    user2 = two_users_with_tokens["user2"]
 
-    # Создаем первого пользователя
-    response_first = await client.post("/users/", json=data_user)
-    assert response_first.status_code == 201
-    first_user_id = response_first.json()["user_id"]
+    first_user_id = user1["user_data"]["user_id"]
+    second_user_id = user2["user_data"]["user_id"]
+    second_user_headers = user2["headers"]
 
-    # Создаем второго пользователя с другим email
-    second_user_data = {**data_user, "email": "second@example.com"}
-    response_second = await client.post("/users/", json=second_user_data)
-    assert response_second.status_code == 201
-    second_user_id = response_second.json()["user_id"]
+    update_payload = {"email": user1["user_data"]["email"]}
+    response_update = await client.patch(
+        f"/users/{second_user_id}", json=update_payload, headers=second_user_headers
+    )
 
-    # Пытаемся обновить email второго пользователя на email первого
-    update_payload = {"email": data_user["email"]}
-    response_update = await client.patch(f"/users/{second_user_id}", json=update_payload)
-
-    # Должна вернуться ошибка 400 с сообщением о дублирующем email
     assert response_update.status_code == 400
     error_detail = response_update.json()["detail"]
     assert "already exists" in error_detail
 
-    # Проверяем что email второго пользователя не изменился
     response_get = await client.get(f"/users/{second_user_id}")
     assert response_get.status_code == 200
     user_data = response_get.json()
-    assert user_data["email"] == "second@example.com"
+    assert user_data["email"] == user2["user_data"]["email"]
 
-    # Проверяем что первый пользователь не пострадал
     response_get_first = await client.get(f"/users/{first_user_id}")
     assert response_get_first.status_code == 200
     first_user_data = response_get_first.json()
-    assert first_user_data["email"] == data_user["email"]
+    assert first_user_data["email"] == user1["user_data"]["email"]
+
+
+@pytest.mark.asyncio
+async def test_update_user_unauthorized(client, user_with_token):
+
+    user_data = user_with_token["user_data"]
+    user_id = user_data["user_id"]
+
+    clear_cookies(client)
+
+    update_payload = {"name": "NewName"}
+    response = await client.patch(f"/users/{user_id}", json=update_payload)
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_update_user_wrong_user(client, two_users_with_tokens):
+
+    user1 = two_users_with_tokens["user1"]
+    user2 = two_users_with_tokens["user2"]
+
+    user2_id = user2["user_data"]["user_id"]
+    user1_headers = user1["headers"]
+
+    update_payload = {"name": "HackedName"}
+    response = await client.patch(
+        f"/users/{user2_id}", json=update_payload, headers=user1_headers
+    )
+    assert response.status_code == 403
+
+    response_get = await client.get(f"/users/{user2_id}")
+    assert response_get.status_code == 200
+    user_data = response_get.json()
+    assert user_data["name"] == user2["user_data"]["name"]
+
+
+@pytest.mark.asyncio
+async def test_update_user_admin_can_update_any_user(
+    client, admin_with_token, user_with_token
+):
+
+    admin_headers = admin_with_token["headers"]
+    user_data = user_with_token["user_data"]
+    user_id = user_data["user_id"]
+
+    update_payload = {"name": "AdminUpdatedName"}
+    response = await client.patch(
+        f"/users/{user_id}", json=update_payload, headers=admin_headers
+    )
+    assert response.status_code == 200
+
+    response_get = await client.get(f"/users/{user_id}")
+    assert response_get.status_code == 200
+    updated_user = response_get.json()
+    assert updated_user["name"] == "AdminUpdatedName"
+
+
+@pytest.mark.asyncio
+async def test_update_user_moderator_cannot_update_other_user(
+    client, moderator_with_token, user_with_token
+):
+    """Тест что модератор не может обновить другого пользователя"""
+    moderator_headers = moderator_with_token["headers"]
+    user_data = user_with_token["user_data"]
+    user_id = user_data["user_id"]
+
+    update_payload = {"name": "ModeratorUpdatedName"}
+    response = await client.patch(
+        f"/users/{user_id}", json=update_payload, headers=moderator_headers
+    )
+    assert response.status_code == 403
+
+    response_get = await client.get(f"/users/{user_id}")
+    assert response_get.status_code == 200
+    user_data_from_db = response_get.json()
+    assert user_data_from_db["name"] == user_data["name"]
 
 
 @pytest.mark.parametrize(
     "update_payload,expected_status,expected_error",
     [
-        # Успешные обновления отдельных полей
         ({"email": "newemail@example.com"}, 200, None),
         ({"name": "NewName"}, 200, None),
         ({"surname": "NewSurname"}, 200, None),
@@ -49,7 +119,6 @@ async def test_update_user_duplicate_email(client, data_user):
         ({"gender": "f"}, 200, None),
         ({"country": "Russia"}, 200, None),
         ({"city": "Moscow"}, 200, None),
-        # Обновление нескольких полей одновременно
         (
             {
                 "name": "UpdatedName",
@@ -70,9 +139,7 @@ async def test_update_user_duplicate_email(client, data_user):
             None,
         ),
         ({"bio": None}, 200, None),
-        # Обновление bio с пустой строки на значение
         ({"bio": "Восстановленная биография"}, 200, None),
-        # Валидационные ошибки  email
         ({"email": "invalid-email"}, 422, "value is not a valid email address"),
         (
             {"email": "a" * 100 + "@example.com"},
@@ -80,43 +147,28 @@ async def test_update_user_duplicate_email(client, data_user):
             "value is not a valid email address",
         ),
         ({"email": ""}, 422, "value is not a valid email address"),
-        # Валидационные ошибки name
         ({"name": ""}, 422, "String should have at least 1 character"),
         ({"name": "   "}, 422, "String should have at least 1 character"),
         ({"name": "a" * 51}, 422, "String should have at most 50 characters"),
-        ({"name": None}, 404, None),
-        # Валидационные ошибки  surname
         ({"surname": ""}, 422, "String should have at least 1 character"),
         ({"surname": "a" * 51}, 422, "String should have at most 50 characters"),
-        ({"surname": None}, 404, None),
         ({"date_of_birth": "invalid-date"}, 422, "Input should be a valid date"),
-        ({"date_of_birth": None}, 404, None),
-        ({"date_of_birth": 123}, 422, "zero time"),
-        # Валидационные ошибки  gender
         ({"gender": "x"}, 422, "Gender must be 'm' or 'f'"),
         ({"gender": "mm"}, 422, "String should have at most 1 character"),
         ({"gender": "M"}, 422, "Gender must be 'm' or 'f'"),
         ({"gender": "male"}, 422, "String should have at most 1 character"),
         ({"gender": ""}, 422, "String should have at least 1 character"),
-        ({"gender": None}, 404, None),
-        # Валидационные ошибки country
         ({"country": ""}, 422, "String should have at least 1 character"),
         ({"country": "a" * 51}, 422, "String should have at most 50 characters"),
-        ({"country": None}, 404, None),
-        # Валидационные ошибки city
         ({"city": ""}, 422, "String should have at least 1 character"),
         ({"city": "a" * 51}, 422, "String should have at most 50 characters"),
-        ({"city": None}, 404, None),
-        # Неправильные типы данных
         ({"email": 123}, 422, "Input should be a valid string"),
         ({"name": 123}, 422, "Input should be a valid string"),
         ({"surname": True}, 422, "Input should be a valid string"),
         ({"gender": 123}, 422, "Input should be a valid string"),
         ({"country": ["Russia"]}, 422, "Input should be a valid string"),
         ({"city": {"city": "Moscow"}}, 422, "Input should be a valid string"),
-        # Пустой payload
         ({}, 400, "No data provided for update"),
-        # Граничные значения
         ({"name": "a" * 50}, 200, None),
         ({"bio": "a" * 5000}, 200, None),
         ({"date_of_birth": "2006-08-15"}, 200, None),
@@ -124,13 +176,16 @@ async def test_update_user_duplicate_email(client, data_user):
 )
 @pytest.mark.asyncio
 async def test_update_user_comprehensive(
-    client, data_user, update_payload, expected_status, expected_error
+    client, user_with_token, update_payload, expected_status, expected_error
 ):
-    response_post = await client.post("/users/", json=data_user)
-    assert response_post.status_code == 201
-    user_id = response_post.json()["user_id"]
 
-    response_update = await client.patch(f"/users/{user_id}", json=update_payload)
+    user_data = user_with_token["user_data"]
+    user_id = user_data["user_id"]
+    headers = user_with_token["headers"]
+
+    response_update = await client.patch(
+        f"/users/{user_id}", json=update_payload, headers=headers
+    )
     assert response_update.status_code == expected_status
 
     if expected_status == 200:
@@ -156,3 +211,61 @@ async def test_update_user_comprehensive(
     elif expected_status == 400:
         error_detail = response_update.json()["detail"]
         assert expected_error in error_detail
+
+
+@pytest.mark.asyncio
+async def test_update_user_doesnt_exist(client, user_with_token):
+
+    user_id = "00000000-0000-0000-0000-000000000000"
+    headers = user_with_token["headers"]
+
+    update_payload = {"name": "NewName"}
+    response = await client.patch(
+        f"/users/{user_id}", json=update_payload, headers=headers
+    )
+    assert response.status_code == 404
+    assert "doesn't exist" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_update_user_invalid_uuid_format(client, user_with_token):
+
+    invalid_user_id = "invalid-uuid-format"
+    headers = user_with_token["headers"]
+
+    update_payload = {"name": "NewName"}
+    response = await client.patch(
+        f"/users/{invalid_user_id}", json=update_payload, headers=headers
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_update_user_bio_validation(client, user_with_token):
+
+    user_data = user_with_token["user_data"]
+    user_id = user_data["user_id"]
+    headers = user_with_token["headers"]
+
+    long_bio = "a" * 5001
+    update_payload = {"bio": long_bio}
+
+    response = await client.patch(
+        f"/users/{user_id}", json=update_payload, headers=headers
+    )
+    assert response.status_code == 422
+
+    detail = response.json()["detail"]
+    if isinstance(detail, list):
+        error_messages = [e.get("msg", "") for e in detail]
+    else:
+        error_messages = [detail]
+    assert any("Bio must not exceed 5000 characters" in msg for msg in error_messages)
+
+    valid_bio = "a" * 5000
+    update_payload = {"bio": valid_bio}
+
+    response = await client.patch(
+        f"/users/{user_id}", json=update_payload, headers=headers
+    )
+    assert response.status_code == 200

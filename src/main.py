@@ -7,9 +7,9 @@ from src.auth.router import admin_router, auth_router
 from src.user_profile.router import users_router
 
 main_api_router = APIRouter()
-main_api_router.include_router(auth_router, tags=["auth"])
-main_api_router.include_router(admin_router, tags=["admin"])
-main_api_router.include_router(users_router, tags=["users"])
+main_api_router.include_router(admin_router)
+main_api_router.include_router(auth_router)
+main_api_router.include_router(users_router)
 
 app = FastAPI(title="Kindle")
 app.add_middleware(

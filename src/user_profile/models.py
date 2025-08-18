@@ -39,18 +39,6 @@ class User(Base):
         "RefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
 
-    @property
-    def is_admin(self) -> bool:
-        return self.role == "admin"
-
-    @property
-    def is_moderator(self) -> bool:
-        return self.role == "moderator"
-
-    @property
-    def is_user(self) -> bool:
-        return self.role == "user"
-
 
 class UserPhoto(Base):
     __tablename__ = "user_photo"

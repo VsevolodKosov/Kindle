@@ -13,9 +13,7 @@ def check_user_ownership(current_user: UserRead, target_user_id: UUID) -> None:
         )
 
 
-def check_user_edit_permission(
-    current_user: UserRead, target_user_id: UUID, target_role: str
-):
+def check_user_edit_permission(current_user: UserRead, target_user_id: UUID):
     if current_user.role == "user":
         if current_user.user_id != target_user_id:
             raise HTTPException(
@@ -24,17 +22,13 @@ def check_user_edit_permission(
             )
 
     elif current_user.role == "moderator":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Moderators cannot modify profiles",
-        )
-
-    elif current_user.role == "admin":
-        if target_role == "user":
+        if current_user.user_id != target_user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admins cannot modify user profiles",
+                detail="Moderators cannot modify other user profiles",
             )
+
+    elif current_user.role == "admin":
         return
 
     else:

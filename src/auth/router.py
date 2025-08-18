@@ -1,7 +1,7 @@
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.dependencies import get_current_user
@@ -33,7 +33,7 @@ from src.config import (
 from src.database import get_async_db_session
 from src.user_profile.schemas import UserRead
 
-auth_router = APIRouter()
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
 
@@ -66,7 +66,9 @@ async def login(
     return tokens
 
 
-@auth_router.post("/register", response_model=TokenResponse)
+@auth_router.post(
+    "/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(
     body: RegisterRequest,
     response: Response,

@@ -39,15 +39,14 @@ async def get_current_user(
         raise credentials_exception
 
     try:
-        async with db_session.begin():
-            user_dao = UserDAO(db_session)
-            user = await user_dao.get_user_by_id(UUID(user_id))
+        user_dao = UserDAO(db_session)
+        user = await user_dao.get_user_by_id(UUID(user_id))
 
-            if user is None:
-                raise credentials_exception
+        if user is None:
+            raise credentials_exception
 
-            user_read = UserRead.from_orm_obj(user)
-            user_read.role = user_role
-            return user_read
+        user_read = UserRead.from_orm_obj(user)
+        user_read.role = user_role
+        return user_read
     finally:
         await db_session.close()

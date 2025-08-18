@@ -75,6 +75,20 @@ class RegisterRequest(BaseModel):
             raise ValueError(f"User must be at least {min_age} years old")
         return v
 
+    @field_validator("country")
+    @classmethod
+    def validate_country(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("Country cannot be empty")
+        return v
+
+    @field_validator("city")
+    @classmethod
+    def validate_city(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("City cannot be empty")
+        return v
+
 
 class TokenRevokeRequest(BaseModel):
     refresh_token: RefreshTokenStr

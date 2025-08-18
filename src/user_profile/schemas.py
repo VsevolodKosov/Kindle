@@ -1,12 +1,8 @@
 from datetime import date
-from typing import Annotated
-from typing import Optional
+from typing import Annotated, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
-from pydantic import EmailStr
-from pydantic import field_validator
-from pydantic import StringConstraints
+from pydantic import AnyUrl, BaseModel, EmailStr, StringConstraints, field_validator
 
 NameStr = Annotated[
     str, StringConstraints(min_length=1, max_length=50, strip_whitespace=True)
@@ -27,6 +23,7 @@ LinkStr = Annotated[
 UrlStr = Annotated[
     str, StringConstraints(min_length=1, max_length=255, strip_whitespace=True)
 ]
+PasswordStr = Annotated[str, StringConstraints(min_length=8)]
 
 
 class UserCreate(BaseModel):
@@ -104,6 +101,7 @@ class UserRead(BaseModel):
     gender: GenderStr
     country: CountryCityStr
     city: CountryCityStr
+    role: str
 
     @property
     def age(self) -> int:
@@ -129,11 +127,13 @@ class UserRead(BaseModel):
             gender=user.gender,
             country=user.country,
             city=user.city,
+            role=user.role,
         )
 
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
+    password: Optional[PasswordStr] = None
     name: Optional[NameStr] = None
     surname: Optional[NameStr] = None
     date_of_birth: Optional[date] = None
@@ -149,10 +149,17 @@ class UserUpdate(BaseModel):
             raise ValueError("Gender must be 'm' or 'f'")
         return v
 
+    @field_validator("bio")
+    @classmethod
+    def validate_bio(cls, v):
+        if v is not None and len(v) > 5000:
+            raise ValueError("Bio must not exceed 5000 characters")
+        return v
+
 
 class UserSocialMediaLinkCreate(BaseModel):
     name: NameStr
-    link: LinkStr
+    link: AnyUrl
 
     @field_validator("name")
     @classmethod
@@ -161,12 +168,11 @@ class UserSocialMediaLinkCreate(BaseModel):
             raise ValueError("Name cannot be empty")
         return v
 
-    @field_validator("link")
-    @classmethod
-    def validate_link(cls, v):
-        if not v or not v.strip():
-            raise ValueError("Link cannot be empty")
-        return v
+    def model_dump(self, **kwargs):
+        data = super().model_dump(**kwargs)
+        if isinstance(data.get("link"), AnyUrl):
+            data["link"] = str(data["link"])
+        return data
 
 
 class UserSocialMediaLinkRead(BaseModel):
@@ -188,7 +194,7 @@ class UserSocialMediaLinkRead(BaseModel):
 class UserSocialMediaLinkUpdate(BaseModel):
     id: int
     name: Optional[NameStr] = None
-    link: Optional[LinkStr] = None
+    link: Optional[AnyUrl] = None
 
     @field_validator("name")
     @classmethod
@@ -197,12 +203,11 @@ class UserSocialMediaLinkUpdate(BaseModel):
             raise ValueError("Name cannot be empty")
         return v
 
-    @field_validator("link")
-    @classmethod
-    def validate_link(cls, v):
-        if v is not None and not v.strip():
-            raise ValueError("Link cannot be empty")
-        return v
+    def model_dump(self, **kwargs):
+        data = super().model_dump(**kwargs)
+        if isinstance(data.get("link"), AnyUrl):
+            data["link"] = str(data["link"])
+        return data
 
     @classmethod
     def from_orm_obj(cls, link):
@@ -214,14 +219,13 @@ class UserSocialMediaLinkUpdate(BaseModel):
 
 
 class UserPhotoCreate(BaseModel):
-    url: UrlStr
+    url: AnyUrl
 
-    @field_validator("url")
-    @classmethod
-    def validate_url(cls, v):
-        if not v or not v.strip():
-            raise ValueError("URL cannot be empty")
-        return v
+    def model_dump(self, **kwargs):
+        data = super().model_dump(**kwargs)
+        if isinstance(data.get("url"), AnyUrl):
+            data["url"] = str(data["url"])
+        return data
 
 
 class UserPhotoRead(BaseModel):
@@ -242,9 +246,8 @@ class UserPhotoUpdate(BaseModel):
     id: int
     url: Optional[UrlStr] = None
 
-    @field_validator("url")
-    @classmethod
-    def validate_url(cls, v):
-        if v is not None and not v.strip():
-            raise ValueError("URL cannot be empty")
-        return v
+    def model_dump(self, **kwargs):
+        data = super().model_dump(**kwargs)
+        if isinstance(data.get("url"), AnyUrl):
+            data["url"] = str(data["url"])
+        return data

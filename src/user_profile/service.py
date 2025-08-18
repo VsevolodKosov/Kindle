@@ -4,40 +4,21 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.user_profile.dao import UserDAO
-from src.user_profile.dao import UserPhotoDAO
-from src.user_profile.dao import UserSocialMediaLinkDAO
-from src.user_profile.schemas import UserCreate
-from src.user_profile.schemas import UserPhotoCreate
-from src.user_profile.schemas import UserPhotoRead
-from src.user_profile.schemas import UserPhotoUpdate
-from src.user_profile.schemas import UserRead
-from src.user_profile.schemas import UserSocialMediaLinkCreate
-from src.user_profile.schemas import UserSocialMediaLinkRead
-from src.user_profile.schemas import UserSocialMediaLinkUpdate
-from src.user_profile.schemas import UserUpdate
-
-
-async def _create_user(body: UserCreate, db_session: AsyncSession) -> UserRead:
-    async with db_session.begin():
-        user_dao = UserDAO(db_session)
-        try:
-            user = await user_dao.create_user(
-                email=body.email,
-                name=body.name,
-                surname=body.surname,
-                date_of_birth=body.date_of_birth,
-                bio=body.bio,
-                gender=body.gender,
-                country=body.country,
-                city=body.city,
-            )
-            return UserRead.from_orm_obj(user)
-        except ValueError as e:
-            if "already exists" in str(e):
-                raise HTTPException(
-                    status_code=400, detail="User with this email already exists"
-                )
+from src.user_profile.dao import UserDAO, UserPhotoDAO, UserSocialMediaLinkDAO
+from src.user_profile.schemas import (
+    UserPhotoCreate,
+    UserPhotoRead,
+    UserPhotoUpdate,
+    UserRead,
+    UserSocialMediaLinkCreate,
+    UserSocialMediaLinkRead,
+    UserSocialMediaLinkUpdate,
+    UserUpdate,
+)
+from src.user_profile.utils import (
+    check_user_delete_permission,
+    check_user_edit_permission,
+)
 
 
 async def _get_user_by_id(id: UUID, db_session: AsyncSession) -> UserRead:
@@ -51,9 +32,20 @@ async def _get_user_by_id(id: UUID, db_session: AsyncSession) -> UserRead:
         return UserRead.from_orm_obj(user)
 
 
-async def _update_user(body: UserUpdate, id: UUID, db_session: AsyncSession) -> UserRead:
+async def _update_user(
+    body: UserUpdate, id: UUID, current_user: UserRead, db_session: AsyncSession
+) -> UserRead:
     async with db_session.begin():
         user_dao = UserDAO(db_session)
+        target_user = await user_dao.get_user_by_id(id)
+
+        if target_user is None:
+            raise HTTPException(
+                status_code=404, detail=f"User with id {id} doesn't exist"
+            )
+
+        check_user_edit_permission(current_user, id)
+
         update_data = {k: v for k, v in body.model_dump(exclude_unset=True).items()}
 
         if not update_data:
@@ -72,9 +64,20 @@ async def _update_user(body: UserUpdate, id: UUID, db_session: AsyncSession) -> 
         return UserRead.from_orm_obj(updated_user)
 
 
-async def _delete_user(id: UUID, db_session: AsyncSession) -> UserRead:
+async def _delete_user(
+    id: UUID, current_user: UserRead, db_session: AsyncSession
+) -> UserRead:
     async with db_session.begin():
         user_dao = UserDAO(db_session)
+        target_user = await user_dao.get_user_by_id(id)
+
+        if target_user is None:
+            raise HTTPException(
+                status_code=404, detail=f"User with id {id} doesn't exist"
+            )
+
+        check_user_delete_permission(current_user, id, target_user.role)
+
         deleted_user = await user_dao.delete_user_by_id(id)
         if deleted_user is None:
             raise HTTPException(
@@ -84,11 +87,20 @@ async def _delete_user(id: UUID, db_session: AsyncSession) -> UserRead:
 
 
 async def _create_photo(
-    body: UserPhotoCreate, user_id: UUID, db_session: AsyncSession
+    body: UserPhotoCreate, user_id: UUID, current_user: UserRead, db_session: AsyncSession
 ) -> UserPhotoRead:
     async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        user = await user_dao.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=404, detail=f"User with id {user_id} doesn't exist"
+            )
+
+        check_user_edit_permission(current_user, user_id)
+
         photo_dao = UserPhotoDAO(db_session)
-        photo = await photo_dao.create_photo(user_id=user_id, url=body.url)
+        photo = await photo_dao.create_photo(user_id=user_id, url=str(body.url))
         return UserPhotoRead.from_orm_obj(photo)
 
 
@@ -96,18 +108,22 @@ async def _get_all_photos_by_user(
     user_id: UUID, db_session: AsyncSession
 ) -> List[UserPhotoRead]:
     async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        user = await user_dao.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=404, detail=f"User with id {user_id} doesn't exist"
+            )
+
         photo_dao = UserPhotoDAO(db_session)
         photos = await photo_dao.get_all_photos_by_user(user_id)
-        if photos is None:
-            raise HTTPException(
-                status_code=404, detail=f"User with id {user_id} doesn't have a photo"
-            )
         return [UserPhotoRead.from_orm_obj(photo) for photo in photos]
 
 
 async def _delete_photo_by_id(
-    user_id: UUID, photo_id: int, db_session: AsyncSession
+    user_id: UUID, photo_id: int, current_user: UserRead, db_session: AsyncSession
 ) -> UserPhotoRead:
+    check_user_edit_permission(current_user, user_id)
     async with db_session.begin():
         photo_dao = UserPhotoDAO(db_session)
         deleted_photo = await photo_dao.delete_photo_by_id(photo_id)
@@ -121,8 +137,13 @@ async def _delete_photo_by_id(
 
 
 async def _update_photo_by_id(
-    body: UserPhotoUpdate, user_id: UUID, photo_id: int, db_session: AsyncSession
+    body: UserPhotoUpdate,
+    user_id: UUID,
+    photo_id: int,
+    current_user: UserRead,
+    db_session: AsyncSession,
 ) -> UserPhotoRead:
+    check_user_edit_permission(current_user, user_id)
     async with db_session.begin():
         photo_dao = UserPhotoDAO(db_session)
         update_data = {
@@ -144,11 +165,25 @@ async def _update_photo_by_id(
 
 
 async def _create_link(
-    body: UserSocialMediaLinkCreate, user_id: UUID, db_session: AsyncSession
+    body: UserSocialMediaLinkCreate,
+    user_id: UUID,
+    current_user: UserRead,
+    db_session: AsyncSession,
 ) -> UserSocialMediaLinkRead:
     async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        user = await user_dao.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=404, detail=f"User with id {user_id} doesn't exist"
+            )
+
+        check_user_edit_permission(current_user, user_id)
+
         link_dao = UserSocialMediaLinkDAO(db_session)
-        link = await link_dao.create_link(user_id=user_id, link=body.link, name=body.name)
+        link = await link_dao.create_link(
+            user_id=user_id, link=str(body.link), name=body.name
+        )
         return UserSocialMediaLinkRead.from_orm_obj(link)
 
 
@@ -156,14 +191,26 @@ async def _get_all_links_by_user(
     user_id: UUID, db_session: AsyncSession
 ) -> List[UserSocialMediaLinkRead]:
     async with db_session.begin():
+        user_dao = UserDAO(db_session)
+        user = await user_dao.get_user_by_id(user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=404, detail=f"User with id {user_id} doesn't exist"
+            )
+
         link_dao = UserSocialMediaLinkDAO(db_session)
         links = await link_dao.get_all_links_by_user(user_id)
         return [UserSocialMediaLinkRead.from_orm_obj(link) for link in links]
 
 
 async def _update_link_by_id(
-    body: UserSocialMediaLinkUpdate, user_id: UUID, link_id: int, db_session: AsyncSession
+    body: UserSocialMediaLinkUpdate,
+    user_id: UUID,
+    link_id: int,
+    current_user: UserRead,
+    db_session: AsyncSession,
 ) -> UserSocialMediaLinkRead:
+    check_user_edit_permission(current_user, user_id)
     async with db_session.begin():
         link_dao = UserSocialMediaLinkDAO(db_session)
         update_data = {
@@ -184,8 +231,9 @@ async def _update_link_by_id(
 
 
 async def _delete_link_by_id(
-    user_id: UUID, link_id: int, db_session: AsyncSession
+    user_id: UUID, link_id: int, current_user: UserRead, db_session: AsyncSession
 ) -> UserSocialMediaLinkRead:
+    check_user_edit_permission(current_user, user_id)
     async with db_session.begin():
         link_dao = UserSocialMediaLinkDAO(db_session)
         deleted_link = await link_dao.delete_link_by_id(link_id)

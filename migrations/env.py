@@ -3,13 +3,15 @@ from logging.config import fileConfig
 
 from alembic import context
 from dotenv import load_dotenv
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
+from src.auth.models import RefreshToken  # noqa: F401
 from src.models import Base
-from src.user_profile.models import User  # noqa: F401
-from src.user_profile.models import UserPhoto  # noqa: F401
-from src.user_profile.models import UserSocialMediaLinks  # noqa: F401
+from src.user_profile.models import (
+    User,  # noqa: F401
+    UserPhoto,  # noqa: F401
+    UserSocialMediaLinks,  # noqa: F401
+)
 
 environment = os.getenv("APP_ENV", "prod")
 env_file = f".env.db_{environment}"

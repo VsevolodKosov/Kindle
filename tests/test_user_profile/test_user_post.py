@@ -1,32 +1,47 @@
 import pytest
 
+
 @pytest.mark.asyncio
-async def test_create_user(client, data_user):
-    response = await client.post("/users/", json=data_user)
+async def test_register_user_success(client, data_user):
+
+    response = await client.post("/auth/register", json=data_user)
     assert response.status_code == 201
     body = response.json()
-    assert "user_id" in body
-    body.pop("user_id")
-    assert body == data_user
+    assert "access_token" in body
+    assert "refresh_token" in body
+    assert "password" not in body
+    assert body["access_token"]
+    assert body["refresh_token"]
+
 
 @pytest.mark.asyncio
-async def test_create_user_duplicate_email(client, data_user):
-    # Создаем первого пользователя
-    response_first = await client.post("/users/", json=data_user)
+async def test_register_user_duplicate_email(client, data_user):
+
+    response_first = await client.post("/auth/register", json=data_user)
     assert response_first.status_code == 201
 
-    # Пытаемся создать такого жще пользователя (Уникальным быть должен только email)
-    response_second = await client.post("/users/", json=data_user)
+    response_second = await client.post("/auth/register", json=data_user)
     assert response_second.status_code == 400
     assert "already exists" in response_second.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_register_user_duplicate_email_different_password(client, data_user):
+
+    response_first = await client.post("/auth/register", json=data_user)
+    assert response_first.status_code == 201
+
+    duplicate_user = {**data_user}
+    duplicate_user["password"] = "DifferentPassword123!"
+    response_second = await client.post("/auth/register", json=duplicate_user)
+    assert response_second.status_code == 400
+    assert "already exists" in response_second.json()["detail"]
+
 
 @pytest.mark.parametrize(
     "payload,expected_status",
     [
-        # Пустой payload
         ({}, 422),
-
-        # Отсутствует обязательное поле email
         (
             {
                 "name": "John",
@@ -35,10 +50,10 @@ async def test_create_user_duplicate_email(client, data_user):
                 "gender": "m",
                 "country": "Russia",
                 "city": "Moscow",
+                "password": "TestPassword123!",
             },
             422,
         ),
-        # Отсутствует обязательное поле name
         (
             {
                 "email": "test1@example.com",
@@ -47,10 +62,10 @@ async def test_create_user_duplicate_email(client, data_user):
                 "gender": "m",
                 "country": "Russia",
                 "city": "Moscow",
+                "password": "TestPassword123!",
             },
             422,
         ),
-        # Отсутствует обязательное поле surname
         (
             {
                 "email": "test2@example.com",
@@ -59,10 +74,10 @@ async def test_create_user_duplicate_email(client, data_user):
                 "gender": "m",
                 "country": "Russia",
                 "city": "Moscow",
+                "password": "TestPassword123!",
             },
             422,
         ),
-        # Отсутствует обязательное поле date_of_birth
         (
             {
                 "email": "test3@example.com",
@@ -71,10 +86,10 @@ async def test_create_user_duplicate_email(client, data_user):
                 "gender": "m",
                 "country": "Russia",
                 "city": "Moscow",
+                "password": "TestPassword123!",
             },
             422,
         ),
-        # Отсутствует обязательное поле gender
         (
             {
                 "email": "test4@example.com",
@@ -83,10 +98,10 @@ async def test_create_user_duplicate_email(client, data_user):
                 "date_of_birth": "1990-01-01",
                 "country": "Russia",
                 "city": "Moscow",
+                "password": "TestPassword123!",
             },
             422,
         ),
-        # Отсутствует обязательное поле country
         (
             {
                 "email": "test5@example.com",
@@ -95,10 +110,10 @@ async def test_create_user_duplicate_email(client, data_user):
                 "date_of_birth": "1990-01-01",
                 "gender": "m",
                 "city": "Moscow",
+                "password": "TestPassword123!",
             },
             422,
         ),
-        # Отсутствует обязательное поле city
         (
             {
                 "email": "test6@example.com",
@@ -107,10 +122,10 @@ async def test_create_user_duplicate_email(client, data_user):
                 "date_of_birth": "1990-01-01",
                 "gender": "m",
                 "country": "Russia",
+                "password": "TestPassword123!",
             },
             422,
         ),
-        # Отсутствует необязательное поле bio (должно пройти)
         (
             {
                 "email": "test7@example.com",
@@ -121,441 +136,126 @@ async def test_create_user_duplicate_email(client, data_user):
                 "country": "Russia",
                 "city": "Moscow",
             },
-            201,
-        ),
-        # Несколько отсутствующих обязательных полей
-        (
-            {
-                "email": "test8@example.com",
-                "name": "John",
-                # Отсутствуют: surname, date_of_birth, gender, country, city
-            },
             422,
         ),
     ],
 )
 @pytest.mark.asyncio
-async def test_create_user_without_some_fields(client, payload, expected_status):
-    response = await client.post("/users/", json=payload)
+async def test_register_user_validation_errors(client, payload, expected_status):
+
+    response = await client.post("/auth/register", json=payload)
     assert response.status_code == expected_status
 
 
 @pytest.mark.parametrize(
-    "payload,expected_status,expected_error",
+    "field,invalid_value,expected_error",
     [
-        # Превышение длины полей
-        (
-            {
-                "email": "a" * 100 + "@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "value is not a valid email address",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "a" * 51,
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "String should have at most 50 characters",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "a" * 51,
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "String should have at most 50 characters",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "a" * 51,
-                "city": "Moscow",
-            },
-            422,
-            "String should have at most 50 characters",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "a" * 51,
-            },
-            422,
-            "String should have at most 50 characters",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-                "bio": "a" * 5001,
-            },
-            422,
-            "Bio must not exceed 5000 characters",
-        ),
-        # Валидация gender
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "x",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Gender must be m or f",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "mm",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "String should have at most 1 character",
-        ),
-        # Валидация даты рождения
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "2030-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Date of birth cannot be in the future",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "2010-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "User must be at least 18 years old",
-        ),
-        # None значения
-        (
-            {
-                "email": None,
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": None,
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": None,
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": None,
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid date",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": None,
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        # Неправильные типы данных
-        (
-            {
-                "email": 123,
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": 123,
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": 123,
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Datetimes provided to dates should have zero time",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": 123,
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        # Boolean значения
-        (
-            {
-                "email": True,
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": False,
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        # Массивы и объекты
-        (
-            {
-                "email": ["test@example.com"],
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": ["John"],
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        (
-            {
-                "email": {"email": "test@example.com"},
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid string",
-        ),
-        # Пустые строки
-        (
-            {
-                "email": "test@example.com",
-                "name": "",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "String should have at least 1 character",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "String should have at least 1 character",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "",
-                "city": "Moscow",
-            },
-            422,
-            "String should have at least 1 character",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "",
-            },
-            422,
-            "String should have at least 1 character",
-        ),
-        # Неправильные форматы
-        (
-            {
-                "email": "invalid-email",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "1990-01-01",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "value is not a valid email address",
-        ),
-        (
-            {
-                "email": "test@example.com",
-                "name": "John",
-                "surname": "Doe",
-                "date_of_birth": "invalid-date",
-                "gender": "m",
-                "country": "Russia",
-                "city": "Moscow",
-            },
-            422,
-            "Input should be a valid date",
-        ),
+        ("email", "invalid-email", "value is not a valid email address"),
+        ("email", "", "value is not a valid email address"),
+        ("email", "a" * 100 + "@example.com", "value is not a valid email address"),
+        ("name", "", "String should have at least 1 character"),
+        ("name", "   ", "String should have at least 1 character"),
+        ("name", "a" * 51, "String should have at most 50 characters"),
+        ("surname", "", "String should have at least 1 character"),
+        ("surname", "a" * 51, "String should have at most 50 characters"),
+        ("date_of_birth", "invalid-date", "Input should be a valid date"),
+        ("date_of_birth", "2026-01-01", "Date of birth cannot be in the future"),
+        ("date_of_birth", "2010-01-01", "User must be at least 18 years old"),
+        ("gender", "x", "Gender must be m or f"),
+        ("gender", "mm", "String should have at most 1 character"),
+        ("gender", "M", "Gender must be m or f"),
+        ("gender", "male", "String should have at most 1 character"),
+        ("gender", "", "String should have at least 1 character"),
+        ("country", "", "String should have at least 1 character"),
+        ("country", "   ", "String should have at least 1 character"),
+        ("country", "a" * 51, "String should have at most 50 characters"),
+        ("city", "", "String should have at least 1 character"),
+        ("city", "   ", "String should have at least 1 character"),
+        ("city", "a" * 51, "String should have at most 50 characters"),
+        ("password", "short", "String should have at least 8 characters"),
+        ("password", "", "String should have at least 8 characters"),
     ],
 )
 @pytest.mark.asyncio
-async def test_create_user_with_field_validation_errors(
-    client, payload, expected_status, expected_error
+async def test_register_user_field_validation(
+    client, field, invalid_value, expected_error
 ):
-    response = await client.post("/users/", json=payload)
-    assert response.status_code == expected_status
 
-    if expected_status == 422:
-        error_detail = response.json()["detail"]
-        if isinstance(error_detail, list):
-            error_messages = [error.get("msg", "") for error in error_detail]
-            assert any(expected_error in msg for msg in error_messages)
-        else:
-            assert expected_error in error_detail
+    user_data = {
+        "email": "test@example.com",
+        "name": "John",
+        "surname": "Doe",
+        "date_of_birth": "1990-01-01",
+        "gender": "m",
+        "country": "Russia",
+        "city": "Moscow",
+        "password": "TestPassword123!",
+    }
+
+    user_data[field] = invalid_value
+
+    response = await client.post("/auth/register", json=user_data)
+    assert response.status_code == 422
+
+    detail = response.json()["detail"]
+    if isinstance(detail, list):
+        error_messages = [e.get("msg", "") for e in detail]
+    else:
+        error_messages = [detail]
+
+    assert any(expected_error in msg for msg in error_messages)
+
+
+@pytest.mark.asyncio
+async def test_register_user_bio_validation(client, data_user):
+
+    long_bio_user = {**data_user}
+    long_bio_user["bio"] = "a" * 5001
+
+    response = await client.post("/auth/register", json=long_bio_user)
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    if isinstance(detail, list):
+        error_messages = [e.get("msg", "") for e in detail]
+    else:
+        error_messages = [detail]
+    assert any("Bio must not exceed 5000 characters" in msg for msg in error_messages)
+
+    valid_bio_user = {**data_user}
+    valid_bio_user["email"] = "validbio@example.com"
+    valid_bio_user["bio"] = "a" * 5000
+
+    response = await client.post("/auth/register", json=valid_bio_user)
+    assert response.status_code == 201
+
+
+@pytest.mark.asyncio
+async def test_register_user_successful_login_after_registration(client, data_user):
+
+    response = await client.post("/auth/register", json=data_user)
+    assert response.status_code == 201
+
+    login_data = {"email": data_user["email"], "password": data_user["password"]}
+    login_response = await client.post("/auth/login", json=login_data)
+    assert login_response.status_code == 200
+
+    cookies = login_response.cookies
+    assert "access_token" in cookies
+    assert "refresh_token" in cookies
+
+
+@pytest.mark.asyncio
+async def test_register_user_password_hashing(client, data_user):
+
+    response = await client.post("/auth/register", json=data_user)
+    assert response.status_code == 201
+
+    login_data = {"email": data_user["email"], "password": data_user["password"]}
+    login_response = await client.post("/auth/login", json=login_data)
+    assert login_response.status_code == 200
+
+    wrong_login_data = {"email": data_user["email"], "password": "WrongPassword123!"}
+    wrong_login_response = await client.post("/auth/login", json=wrong_login_data)
+
+    assert wrong_login_response.status_code == 400
+    assert "Incorrect email or password" in wrong_login_response.json()["detail"]

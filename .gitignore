@@ -22,3 +22,11 @@ env
 #pytest
 .pytest_cache
 .coverage
+
+# SSL certificates and keys
+ssl/
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx

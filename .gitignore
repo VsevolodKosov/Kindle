@@ -30,3 +30,6 @@ ssl/
 *.pem
 *.p12
 *.pfx
+
+#structurizr
+.structurizr
